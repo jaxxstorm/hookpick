@@ -26,29 +26,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// rekeyCmd represents the rekey command
-var rekeyCmd = &cobra.Command{
-	Use:   "rekey",
-	Short: "Start a rekey of a cluster of vault server",
-	Long: `Choose one of the vault servers in a site, and
-begin the rekey process`,
+// initCmd represents the init command
+var initCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Begin the init process on a cluster of vault servers",
+	Long:  `Will begin the init process on a cluster of vault servers`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
-		fmt.Println("rekey called")
+		fmt.Println("init called")
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(rekeyCmd)
+	RootCmd.AddCommand(initCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// rekeyCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// initCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// rekeyCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
