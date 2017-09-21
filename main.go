@@ -22,6 +22,8 @@ package main
 
 import "github.com/jaxxstorm/locksmith/cmd"
 
+var Version = "v0.0.1"
+
 func main() {
-	cmd.Execute()
+	cmd.Execute(Version)
 }
