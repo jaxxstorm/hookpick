@@ -69,6 +69,7 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.locksmith.yaml)")
 	RootCmd.PersistentFlags().StringVar(&datacenter, "datacenter", "", "datacenter to operate on")
+	viper.BindPFlag("datacenter", RootCmd.PersistentFlags().Lookup("datacenter"))
 
 	if os.Getenv("VAULT_ADDR") != "" {
 		log.Warning("Warning VAULT_ADDR environment variable is set. This will override the hostname in your config file, it's probably not what you want")
@@ -110,6 +111,12 @@ func getGpgKey(key string) (bool, string) {
 	}
 
 	return gpg, vaultKey
+
+}
+
+func getSpecificDatacenter() string {
+
+	return viper.GetString("datacenter")
 
 }
 

@@ -43,37 +43,43 @@ specified in the configuration file`,
 		var wg sync.WaitGroup
 
 		for _, d := range datacenters {
-			for _, h := range d.Hosts {
 
-				// set hostnames for waitgroup
-				hostName := h.Name
-				hostPort := h.Port
+			datacenter := getSpecificDatacenter()
 
-				wg.Add(1)
+			if datacenter == d.Name || datacenter == "" {
 
-				go func(hostName string, hostPort int) {
-					defer wg.Done()
+				for _, h := range d.Hosts {
 
-					client, err := v.VaultClient(hostName, hostPort, caPath)
+					// set hostnames for waitgroup
+					hostName := h.Name
+					hostPort := h.Port
 
-					if err != nil {
-						log.WithFields(log.Fields{"host": hostName}).Error("Error creating vault client: ", err)
-					}
+					wg.Add(1)
 
-					// get the seal status
-					result, err := client.Sys().SealStatus()
+					go func(hostName string, hostPort int) {
+						defer wg.Done()
 
-					if err != nil {
-						log.WithFields(log.Fields{"host": hostName}).Error("Error getting seal status: ", err)
-					} else {
-						// only check the seal status if we have a client
-						if result.Sealed == true {
-							log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Error("Vault is sealed!")
-						} else {
-							log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Vault is unsealed!")
+						client, err := v.VaultClient(hostName, hostPort, caPath)
+
+						if err != nil {
+							log.WithFields(log.Fields{"host": hostName}).Error("Error creating vault client: ", err)
 						}
-					}
-				}(hostName, hostPort)
+
+						// get the seal status
+						result, err := client.Sys().SealStatus()
+
+						if err != nil {
+							log.WithFields(log.Fields{"host": hostName}).Error("Error getting seal status: ", err)
+						} else {
+							// only check the seal status if we have a client
+							if result.Sealed == true {
+								log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Error("Vault is sealed!")
+							} else {
+								log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Vault is unsealed!")
+							}
+						}
+					}(hostName, hostPort)
+				}
 			}
 		}
 		wg.Wait()
