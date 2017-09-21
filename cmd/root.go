@@ -25,10 +25,21 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
 	"github.com/spf13/viper"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/jaxxstorm/locksmith/config"
+	g "github.com/jaxxstorm/unseal/gpg"
 )
 
 var cfgFile string
+
+var datacenter string
+
+var datacenters []config.Datacenter
+
+var hosts []config.Host
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -36,9 +47,9 @@ var RootCmd = &cobra.Command{
 	Short: "A tool to manage Vault clusters",
 	Long: `Easily unseal, rekey and init multiple Vault servers in a large,
 distributed environment`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -53,28 +64,61 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
-
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.locksmith.yaml)")
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	RootCmd.PersistentFlags().StringVar(&datacenter, "datacenter", "", "datacenter to operate on")
+}
+
+func getDatacenters() []config.Datacenter {
+
+	err := viper.UnmarshalKey("datacenters", &datacenters)
+
+	if err != nil {
+		log.Error("Unable to read hosts key in config file: %s", err)
+	}
+
+	return datacenters
+
+}
+
+func getCaPath() string {
+
+	return viper.GetString("capath")
+
+}
+
+func getGpgKey(key string) (bool, string) {
+
+	gpg := viper.GetBool("gpg")
+	var vaultKey string
+	var err error
+
+	if gpg == true {
+		vaultKey, err = g.Decrypt(key)
+		if err != nil {
+			log.Fatal("GPG Decryption Error: ", err)
+		}
+	} else {
+
+		vaultKey = ""
+	}
+
+	return gpg, vaultKey
+
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" { // enable ability to specify config file via flag
 		viper.SetConfigFile(cfgFile)
+	} else {
+		viper.SetConfigName(".locksmith") // name of config file (without extension)
+		viper.AddConfigPath("$HOME")      // adding home directory as first search path
+		viper.AddConfigPath(".")
+		viper.AutomaticEnv() // read in environment variables that match
 	}
 
-	viper.SetConfigName(".locksmith") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")      // adding home directory as first search path
-	viper.AutomaticEnv()              // read in environment variables that match
-
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println("Error reading config file: ", err)
 	}
 }
