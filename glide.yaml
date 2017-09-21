@@ -1,0 +1,8 @@
+package: github.com/jaxxstorm/locksmith
+import:
+- package: github.com/Sirupsen/logrus
+  version: ^1.0.3
+- package: github.com/acidlemon/go-dumper
+- package: github.com/spf13/cobra
+- package: github.com/spf13/viper
+  version: ^1.0.0
