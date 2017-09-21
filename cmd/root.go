@@ -66,6 +66,10 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.locksmith.yaml)")
 	RootCmd.PersistentFlags().StringVar(&datacenter, "datacenter", "", "datacenter to operate on")
+
+	if os.Getenv("VAULT_ADDR") != "" {
+		log.Warning("Warning VAULT_ADDR environment variable is set. This will override the hostname in your config file, it's probably not what you want")
+	}
 }
 
 func getDatacenters() []config.Datacenter {
