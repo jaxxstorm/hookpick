@@ -14,4 +14,4 @@
 .glide/
 
 # locksmith config
-.locksmith.yaml
+.locksmith.*
