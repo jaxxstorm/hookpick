@@ -30,9 +30,12 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/jaxxstorm/locksmith/config"
+	g "github.com/jaxxstorm/unseal/gpg"
 )
 
 var cfgFile string
+
+var datacenter string
 
 var datacenters []config.Datacenter
 
@@ -62,6 +65,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.locksmith.yaml)")
+	RootCmd.PersistentFlags().StringVar(&datacenter, "datacenter", "", "datacenter to operate on")
 }
 
 func getDatacenters() []config.Datacenter {
@@ -79,6 +83,26 @@ func getDatacenters() []config.Datacenter {
 func getCaPath() string {
 
 	return viper.GetString("capath")
+
+}
+
+func getGpgKey(key string) (bool, string) {
+
+	gpg := viper.GetBool("gpg")
+	var vaultKey string
+	var err error
+
+	if gpg == true {
+		vaultKey, err = g.Decrypt(key)
+		if err != nil {
+			log.Fatal("GPG Decryption Error: ", err)
+		}
+	} else {
+
+		vaultKey = ""
+	}
+
+	return gpg, vaultKey
 
 }
 

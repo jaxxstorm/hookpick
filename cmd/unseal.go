@@ -21,20 +21,20 @@
 package cmd
 
 import (
-	v "github.com/jaxxstorm/unseal/vault"
-	"github.com/spf13/cobra"
-
 	log "github.com/Sirupsen/logrus"
+	v "github.com/jaxxstorm/unseal/vault"
+
+	"github.com/spf13/cobra"
 
 	"sync"
 )
 
-// statusCmd represents the status command
-var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Get the status of all vaults",
-	Long: `Queries the status of all vaults
-specified in the configuration file`,
+// unsealCmd represents the unseal command
+var unsealCmd = &cobra.Command{
+	Use:   "unseal",
+	Short: "Unseal the vaults using the key providers",
+	Long: `Sends an unseal operationg to all vaults in the configuration file
+using the key provided`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		datacenters := getDatacenters()
@@ -43,9 +43,18 @@ specified in the configuration file`,
 		var wg sync.WaitGroup
 
 		for _, d := range datacenters {
-			for _, h := range d.Hosts {
+			var gpg bool
+			var vaultKey string
+			var gpgKey string
 
-				// set hostnames for waitgroup
+			gpg, gpgKey = getGpgKey(d.Key)
+			if gpg {
+				vaultKey = gpgKey
+			} else {
+				vaultKey = d.Key
+			}
+
+			for _, h := range d.Hosts {
 				hostName := h.Name
 				hostPort := h.Port
 
@@ -55,23 +64,37 @@ specified in the configuration file`,
 					defer wg.Done()
 
 					client, err := v.VaultClient(hostName, hostPort, caPath)
-
 					if err != nil {
-						log.WithFields(log.Fields{"host": hostName}).Error("Error creating vault client: ", err)
+						log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
 					}
 
-					// get the seal status
-					result, err := client.Sys().SealStatus()
+					// get the current status
+					init := v.InitStatus(client)
+					if init.Ready == true {
+						if vaultKey != "" {
+							result, err := client.Sys().Unseal(vaultKey)
+							// error while unsealing
+							if err != nil {
+								log.WithFields(log.Fields{"host": hostName}).Error("Error running unseal operation")
+							}
 
-					if err != nil {
-						log.WithFields(log.Fields{"host": hostName}).Error("Error getting seal status: ", err)
-					} else {
-						// only check the seal status if we have a client
-						if result.Sealed == true {
-							log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Error("Vault is sealed!")
+							// if it's still sealed, print the progress
+							if result.Sealed == true {
+								log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Unseal operation performed")
+								// otherwise, tell us it's unsealed!
+							} else {
+								log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Vault is unsealed!")
+							}
+							// zero out the key
+							// FIXME: is this the best way to do this?
+							// Is it safe?
+							vaultKey = ""
 						} else {
-							log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Vault is unsealed!")
+							log.WithFields(log.Fields{"host": hostName}).Error("No Key Provided")
 						}
+					} else {
+						// sad times, not ready to be unsealed
+						log.WithFields(log.Fields{"host": hostName}).Error("Vault is not ready to be unsealed")
 					}
 				}(hostName, hostPort)
 			}
@@ -82,16 +105,16 @@ specified in the configuration file`,
 }
 
 func init() {
-	RootCmd.AddCommand(statusCmd)
+	RootCmd.AddCommand(unsealCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// statusCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// unsealCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// statusCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// unsealCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
