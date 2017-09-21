@@ -15,3 +15,11 @@
 
 # locksmith config
 .locksmith.*
+
+# goxc config
+*.local.*
+downloads
+
+# golang
+vendor
+
