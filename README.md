@@ -5,7 +5,7 @@ Locksmith is a tool to manage some operational concepts of Hashicorp Vault, spec
 You provide a configuration file with a map of "datacenters". Each datacenter has a key and an array of hosts. Locksmith will perform actions against each of those hosts as you need.
 
 It is currently considered Alpha, and may change drastically over time.
-7
+
 # Why?
 
 Originally, I wrote [unseal](https://github.com/jaxxstorm/unseal) which was specifically for unsealing a large number of Vault servers. However, it became apparent that operating on large numbers of Vaults is painful, especially when it comes to rekeying.
