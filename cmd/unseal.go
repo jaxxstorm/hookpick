@@ -85,10 +85,6 @@ using the key provided`,
 							} else {
 								log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Vault is unsealed!")
 							}
-							// zero out the key
-							// FIXME: is this the best way to do this?
-							// Is it safe?
-							vaultKey = ""
 						} else {
 							log.WithFields(log.Fields{"host": hostName}).Error("No Key Provided")
 						}
@@ -100,7 +96,6 @@ using the key provided`,
 			}
 		}
 		wg.Wait()
-
 	},
 }
 
