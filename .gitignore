@@ -18,3 +18,8 @@
 
 # goxc config
 *.local.*
+downloads
+
+# golang
+vendor
+
