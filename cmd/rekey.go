@@ -24,8 +24,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	v "github.com/jaxxstorm/unseal/vault"
+	v "github.com/jaxxstorm/locksmith/vault"
 
+	//"github.com/acidlemon/go-dumper"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -77,8 +78,9 @@ and returns the client nonce needed for other rekey operators`,
 
 					// check init status
 					init := v.InitStatus(client)
-					if init.Ready == true {
+					sealStatus := v.SealedStatus(client)
 
+					if init.Ready == true && !sealStatus {
 						// get the current leader to operate on
 						result, _ := client.Sys().Leader()
 						// if we are the leader start the rekey

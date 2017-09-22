@@ -42,3 +42,14 @@ func InitStatus(client *api.Client) Status {
 	}
 
 }
+
+func SealedStatus(client *api.Client) bool {
+	status, err := client.Sys().SealStatus()
+
+	if err != nil {
+		log.WithFields(log.Fields{"host": client.Address()}).Error(err)
+	}
+
+	return status.Sealed
+
+}
