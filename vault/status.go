@@ -5,51 +5,20 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-func InitStatus(client *api.Client) Status {
+func Status(client *api.Client) (bool, bool) {
 
 	// statuses
-	init, err := client.Sys().InitStatus()
-
-	if err != nil {
-		log.WithFields(log.Fields{"host": client.Address()}).Error(err)
-		return Status{
-			Ready:  false,
-			Reason: "Error while retrieving initstatus",
-		}
-	}
-	if init == false {
-		return Status{
-			Ready:  false,
-			Reason: "Vault is not initialized",
-		}
-	}
-
-	seal, err := client.Sys().SealStatus()
+	initStatus, err := client.Sys().InitStatus()
 
 	if err != nil {
 		log.WithFields(log.Fields{"host": client.Address()}).Error(err)
 	}
 
-	if seal.Sealed != true {
-		return Status{
-			Ready:  true,
-			Reason: "Vault is already unsealed",
-		}
-	}
-
-	return Status{
-		Ready: true,
-	}
-
-}
-
-func SealedStatus(client *api.Client) bool {
-	status, err := client.Sys().SealStatus()
+	sealedStatus, err := client.Sys().SealStatus()
 
 	if err != nil {
 		log.WithFields(log.Fields{"host": client.Address()}).Error(err)
 	}
 
-	return status.Sealed
-
+	return sealedStatus.Sealed, initStatus
 }

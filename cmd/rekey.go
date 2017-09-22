@@ -77,10 +77,9 @@ and returns the client nonce needed for other rekey operators`,
 					}
 
 					// check init status
-					init := v.InitStatus(client)
-					sealStatus := v.SealedStatus(client)
+					init, sealed := v.Status(client)
 
-					if init.Ready == true && !sealStatus {
+					if init == true && sealed == false {
 						// get the current leader to operate on
 						result, _ := client.Sys().Leader()
 						// if we are the leader start the rekey
