@@ -49,9 +49,6 @@ var RootCmd = &cobra.Command{
 	Short: "A tool to manage Vault clusters",
 	Long: `Easily unseal, rekey and init multiple Vault servers in a large,
 distributed environment`,
-	Run: func(cmd *cobra.Command, args []string) {
-
-	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
