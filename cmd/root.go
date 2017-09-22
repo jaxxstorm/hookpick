@@ -65,7 +65,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.locksmith.yaml)")
-	RootCmd.PersistentFlags().StringVar(&datacenter, "datacenter", "", "datacenter to operate on")
+	RootCmd.PersistentFlags().StringVarP(&datacenter, "datacenter", "d", "", "datacenter to operate on")
 	viper.BindPFlag("datacenter", RootCmd.PersistentFlags().Lookup("datacenter"))
 
 	if os.Getenv("VAULT_ADDR") != "" {
