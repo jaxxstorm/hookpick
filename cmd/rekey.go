@@ -77,7 +77,7 @@ and returns the client nonce needed for other rekey operators`,
 					}
 
 					// check init status
-					init, sealed := v.Status(client)
+					sealed, init := v.Status(client)
 
 					if init == true && sealed == false {
 						// get the current leader to operate on
@@ -86,7 +86,7 @@ and returns the client nonce needed for other rekey operators`,
 						if result.IsSelf == true {
 							rekeyResult, err := client.Sys().RekeyInit(&api.RekeyInitRequest{SecretShares: shares, SecretThreshold: threshold})
 							if err != nil {
-								log.Fatal("Rekey init error ", err)
+								log.Error("Rekey init error ", err)
 							}
 							if rekeyResult.Started {
 								log.WithFields(log.Fields{"host": hostName, "shares": rekeyResult.N, "threshold": rekeyResult.T, "nonce": rekeyResult.Nonce}).Info("Rekey Started. Please supply your keys.")
