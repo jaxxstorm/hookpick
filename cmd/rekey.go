@@ -24,7 +24,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	v "github.com/jaxxstorm/locksmith/vault"
+	v "github.com/jaxxstorm/hookpick/vault"
 
 	//"github.com/acidlemon/go-dumper"
 	"github.com/hashicorp/vault/api"

@@ -1,5 +1,5 @@
 {
-	"AppName": "locksmith",
+	"AppName": "hookpick",
 	"ArtifactsDest": "downloads",
 	"Tasks": [
 		"interpolate-source",
@@ -18,11 +18,11 @@
 	"TaskSettings": {
 		"publish-github": {
 			"apikey": "",
-      "body": "See: https://github.com/jaxxstorm/locksmith/blog/master/CHANGELOG.md",
+      "body": "See: https://github.com/jaxxstorm/hookpick/blog/master/CHANGELOG.md",
       "include": "*.zip,*.tar.gz",
       "outputFormat": "by-file-extension",
       "owner": "jaxxstorm",
-      "repository": "locksmith"
+      "repository": "hookpick"
 			}
 		},
 	"ConfigVersion": "0.9"
