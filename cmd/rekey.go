@@ -60,6 +60,8 @@ and returns the client nonce needed for other rekey operators`,
 		datacenters := getDatacenters()
 		caPath := getCaPath()
 
+		var wg sync.WaitGroup
+
 		// loop through datacenters
 		for _, d := range datacenters {
 			datacenter := getSpecificDatacenter()
@@ -70,34 +72,39 @@ and returns the client nonce needed for other rekey operators`,
 					hostName := h.Name
 					hostPort := h.Port
 
+					wg.Add(1)
+
 					// set up vault client
-					client, err := v.VaultClient(hostName, hostPort, caPath)
+					go func(hostName, hostPort){
+						client, err := v.VaultClient(hostName, hostPort, caPath)
 
-					if err != nil {
-						log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
-					}
+						if err != nil {
+							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
+						}
 
-					// check init status
-					sealed, init := v.Status(client)
+						// check init status
+						sealed, init := v.Status(client)
 
-					if init == true && sealed == false {
-						// get the current leader to operate on
-						result, _ := client.Sys().Leader()
-						// if we are the leader start the rekey
-						if result.IsSelf == true {
-							rekeyResult, err := client.Sys().RekeyInit(&api.RekeyInitRequest{SecretShares: shares, SecretThreshold: threshold})
-							if err != nil {
-								log.Error("Rekey init error ", err)
-							}
-							if rekeyResult.Started {
-								log.WithFields(log.Fields{"host": hostName, "shares": rekeyResult.N, "threshold": rekeyResult.T, "nonce": rekeyResult.Nonce}).Info("Rekey Started. Please supply your keys.")
+						if init == true && sealed == false {
+							// get the current leader to operate on
+							result, _ := client.Sys().Leader()
+							// if we are the leader start the rekey
+							if result.IsSelf == true {
+								rekeyResult, err := client.Sys().RekeyInit(&api.RekeyInitRequest{SecretShares: shares, SecretThreshold: threshold})
+								if err != nil {
+									log.Error("Rekey init error ", err)
+								}
+								if rekeyResult.Started {
+									log.WithFields(log.Fields{"host": hostName, "shares": rekeyResult.N, "threshold": rekeyResult.T, "nonce": rekeyResult.Nonce}).Info("Rekey Started. Please supply your keys.")
+								}
 							}
 						}
-					}
+					}(hostName, hostPort)
 				}
 
 			}
 		}
+		wg.Wait()
 	},
 }
 
