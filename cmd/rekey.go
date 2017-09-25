@@ -75,7 +75,7 @@ and returns the client nonce needed for other rekey operators`,
 					wg.Add(1)
 
 					// set up vault client
-					go func(hostName, hostPort){
+					go func(hostName string, hostPort int) {
 						client, err := v.VaultClient(hostName, hostPort, caPath)
 
 						if err != nil {
@@ -138,7 +138,7 @@ from all the specified Vault servers`,
 					hostPort := h.Port
 
 					wg.Add(1)
-					go func(hostName string, hostPort int){
+					go func(hostName string, hostPort int) {
 						defer wg.Done()
 						client, err := v.VaultClient(hostName, hostPort, caPath)
 
