@@ -28,6 +28,7 @@ import (
 
 	//"github.com/acidlemon/go-dumper"
 	"github.com/hashicorp/vault/api"
+	"sync"
 )
 
 var shares int
@@ -120,7 +121,7 @@ from all the specified Vault servers`,
 		datacenters := getDatacenters()
 		caPath := getCaPath()
 
-		//dump.Dump(datacenters)
+		var wg sync.WaitGroup
 
 		for _, d := range datacenters {
 			datacenter := getSpecificDatacenter()
@@ -128,34 +129,40 @@ from all the specified Vault servers`,
 				for _, h := range d.Hosts {
 					hostName := h.Name
 					hostPort := h.Port
-					client, err := v.VaultClient(hostName, hostPort, caPath)
 
-					if err != nil {
-						log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
-					}
+					wg.Add(1)
+					go func(hostName string, hostPort int){
+						defer wg.Done()
+						client, err := v.VaultClient(hostName, hostPort, caPath)
 
-					// check init status
-					sealed, init := v.Status(client)
+						if err != nil {
+							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
+						}
 
-					if init == true && sealed == false {
-						result, _ := client.Sys().Leader()
-						// if we are the leader start the rekey
-						if result.IsSelf == true {
-							rekeyStatus, err := client.Sys().RekeyStatus()
+						// check init status
+						sealed, init := v.Status(client)
 
-							if err != nil {
-								log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
-							}
-							if rekeyStatus.Started {
-								log.WithFields(log.Fields{"host": hostName, "shares": rekeyStatus.N, "threshold": rekeyStatus.T, "nonce": rekeyStatus.Nonce}).Info("Rekey has been started")
-							} else {
-								log.WithFields(log.Fields{"host": hostName}).Info("Rekey not started")
+						if init == true && sealed == false {
+							result, _ := client.Sys().Leader()
+							// if we are the leader start the rekey
+							if result.IsSelf == true {
+								rekeyStatus, err := client.Sys().RekeyStatus()
+
+								if err != nil {
+									log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
+								}
+								if rekeyStatus.Started {
+									log.WithFields(log.Fields{"host": hostName, "shares": rekeyStatus.N, "threshold": rekeyStatus.T, "nonce": rekeyStatus.Nonce}).Info("Rekey has been started")
+								} else {
+									log.WithFields(log.Fields{"host": hostName}).Info("Rekey not started")
+								}
 							}
 						}
-					}
+					}(hostName, hostPort)
 				}
 			}
 		}
+		wg.Wait()
 	},
 }
 
