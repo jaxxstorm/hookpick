@@ -13,8 +13,8 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-# locksmith config
-.locksmith.*
+# hookpick config
+.hookpick.*
 
 # goxc config
 *.local.*

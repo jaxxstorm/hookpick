@@ -1,8 +1,10 @@
-# locksmith
+# hookpick
 
-Locksmith is a tool to manage some operational concepts of Hashicorp Vault, specifically related to the painful process of unsealing, initialising and rekeying Vault.
+hookpick is a tool to manage some operational concepts of Hashicorp Vault, specifically related to the painful process of unsealing, initialising and rekeying Vault.
 
-You provide a configuration file with a map of "datacenters". Each datacenter has a key and an array of hosts. Locksmith will perform actions against each of those hosts as you need.
+You provide a configuration file with a map of "datacenters". Each datacenter has a key and an array of hosts. hookpick will perform actions against each of those hosts as you need.
+
+The name comes from a a Hook Pick, a tool used to pick locks. This tool is meant to to "unlock" the administration of Vault. Originally the tool was called locksmith, but it conflicted with [locksmith](https://github.com/coreos/locksmith).
 
 It is currently considered Alpha, and may change drastically over time.
 
@@ -30,8 +32,8 @@ You'll need a configuration file. Unseal uses [viper](https://github.com/spf13/v
 
 The app will look for the config file in the following directories, in order:
 
- - `$HOME/.locksmith.yaml`
- - `.locksmith.yaml` (in the directory you're running the binary from)
+ - `$HOME/.hookpick.yaml`
+ - `.hookpick.yaml` (in the directory you're running the binary from)
 
 An example configuratin file in yaml looks like this:
 
@@ -67,9 +69,9 @@ This can be converted to JSON or HCL as needed. Configuration options available 
 
 ## Environment Variables
 
-By default, locksmith will read some environment variables for your configuration. You can find them [here](https://www.vaultproject.io/docs/commands/environment.html)
+By default, hookpick will read some environment variables for your configuration. You can find them [here](https://www.vaultproject.io/docs/commands/environment.html)
 
-You can use _some_ of these environment variables if you wish when using locksmith.
+You can use _some_ of these environment variables if you wish when using hookpick.
 
  - `VAULT_CACERT`: Set this to the path of a CA Cert you wish to use to verify the Vault connection. Note, this will use the same CA cert for all Vaults
  - `VAULT_CAPATH`: An alternative to the above CA Path config option.
@@ -81,9 +83,9 @@ You can use _some_ of these environment variables if you wish when using locksmi
 
 If you want to contribute, we use [glide](https://glide.sh/) for dependency management, so it should be as simple as:
 
- - cloning this repo into `$GOPATH/src/github.com/jaxxstorm/locksmith`
+ - cloning this repo into `$GOPATH/src/github.com/jaxxstorm/hookpick`
  - run `glide install` from the directory
- - run `go build -o locksmith main.go`
+ - run `go build -o hookpick main.go`
 
 
 

@@ -29,8 +29,8 @@ import (
 	"github.com/spf13/viper"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/jaxxstorm/locksmith/config"
-	g "github.com/jaxxstorm/unseal/gpg"
+	"github.com/jaxxstorm/hookpick/config"
+	g "github.com/jaxxstorm/hookpick/gpg"
 )
 
 var cfgFile string
@@ -46,7 +46,7 @@ var Version string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "locksmith",
+	Use:   "hookpick",
 	Short: "A tool to manage Vault clusters",
 	Long: `Easily unseal, rekey and init multiple Vault servers in a large,
 distributed environment`,
@@ -65,7 +65,7 @@ func Execute(version string) {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.locksmith.yaml)")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hookpick.yaml)")
 	RootCmd.PersistentFlags().StringVarP(&datacenter, "datacenter", "d", "", "datacenter to operate on")
 	viper.BindPFlag("datacenter", RootCmd.PersistentFlags().Lookup("datacenter"))
 
@@ -123,8 +123,8 @@ func initConfig() {
 	if cfgFile != "" { // enable ability to specify config file via flag
 		viper.SetConfigFile(cfgFile)
 	} else {
-		viper.SetConfigName(".locksmith") // name of config file (without extension)
-		viper.AddConfigPath("$HOME")      // adding home directory as first search path
+		viper.SetConfigName(".hookpick") // name of config file (without extension)
+		viper.AddConfigPath("$HOME")     // adding home directory as first search path
 		viper.AddConfigPath(".")
 		viper.AutomaticEnv() // read in environment variables that match
 	}

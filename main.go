@@ -20,7 +20,7 @@
 
 package main
 
-import "github.com/jaxxstorm/locksmith/cmd"
+import "github.com/jaxxstorm/hookpick/cmd"
 
 var Version = "v0.0.1"
 
