@@ -22,7 +22,7 @@ package cmd
 
 import (
 	log "github.com/Sirupsen/logrus"
-	v "github.com/jaxxstorm/unseal/vault"
+	v "github.com/jaxxstorm/hookpick/vault"
 
 	"github.com/spf13/cobra"
 
@@ -74,8 +74,8 @@ using the key provided`,
 						}
 
 						// get the current status
-						init := v.InitStatus(client)
-						if init.Ready == true {
+						_, init := v.Status(client)
+						if init {
 							if vaultKey != "" {
 								result, err := client.Sys().Unseal(vaultKey)
 								// error while unsealing
