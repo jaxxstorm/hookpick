@@ -26,7 +26,7 @@ import (
 
 	v "github.com/jaxxstorm/hookpick/vault"
 
-	//"github.com/acidlemon/go-dumper"
+	"github.com/acidlemon/go-dumper"
 	"github.com/hashicorp/vault/api"
 	"sync"
 )
@@ -114,7 +114,75 @@ var submitCmd = &cobra.Command{
 	Long: `Submits your unseal key to the rekey process
 and progresses the rekey`,
 	Run: func(cmd *cobra.Command, args []string) {
+		datacenters := getDatacenters()
+		caPath := getCaPath()
 
+		var wg sync.WaitGroup
+
+		for _, d := range datacenters {
+			datacenter := getSpecificDatacenter()
+			if datacenter == d.Name || datacenter == "" {
+				
+				var gpg bool
+				var vaultKey string
+				var gpgKey string
+
+				gpg, gpgKey = getGpgKey(d.Key)
+				if gpg {
+					vaultKey = gpgKey
+				} else {
+					vaultKey = d.Key
+				}
+		
+
+				for _, h := range d.Hosts {
+					hostName := h.Name
+					hostPort := h.Port
+
+					wg.Add(1)
+					go func(hostName string, hostPort int) {
+						defer wg.Done()
+						client, err := v.VaultClient(hostName, hostPort, caPath)
+
+						if err != nil {
+							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
+						}
+
+						// check init status
+						sealed, init := v.Status(client)
+
+						if init == true && sealed == false {
+							result, _ := client.Sys().Leader()
+							// if we are the leader start the rekey
+							if result.IsSelf == true {
+								rekeyStatus, err := client.Sys().RekeyStatus()
+								if err != nil {
+									log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
+								}
+								if rekeyStatus.Started {
+									rekeyUpdate, err := client.Sys().RekeyUpdate(vaultKey, rekeyStatus.Nonce)
+									if err != nil {
+										log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
+									}
+									if rekeyUpdate.Complete {
+										dump.Dump(rekeyUpdate)
+									} else {
+										newRekeyStatus, err := client.Sys().RekeyStatus()	
+										if err != nil {
+											log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
+										}	
+										log.WithFields(log.Fields{"host": hostName, "shares": newRekeyStatus.N, "threshold": newRekeyStatus.T, "nonce": newRekeyStatus.Nonce, "progress": newRekeyStatus.Progress, "required": newRekeyStatus.Required}).Info("Key submitted")
+									}
+								} else {
+									log.WithFields(log.Fields{"host": hostName}).Info("Rekey not started")
+								}
+							}
+						}
+					}(hostName, hostPort)
+				}
+			}
+		}
+		wg.Wait()
 	},
 }
 
@@ -159,7 +227,7 @@ from all the specified Vault servers`,
 									log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
 								}
 								if rekeyStatus.Started {
-									log.WithFields(log.Fields{"host": hostName, "shares": rekeyStatus.N, "threshold": rekeyStatus.T, "nonce": rekeyStatus.Nonce}).Info("Rekey has been started")
+									log.WithFields(log.Fields{"host": hostName, "shares": rekeyStatus.N, "threshold": rekeyStatus.T, "nonce": rekeyStatus.Nonce, "progress": rekeyStatus.Progress, "required": rekeyStatus.Required}).Info("Rekey has been started")
 								} else {
 									log.WithFields(log.Fields{"host": hostName}).Info("Rekey not started")
 								}
