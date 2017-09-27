@@ -21,7 +21,7 @@
 package cmd
 
 import (
-	v "github.com/jaxxstorm/unseal/vault"
+	v "github.com/jaxxstorm/hookpick/vault"
 	"github.com/spf13/cobra"
 
 	log "github.com/Sirupsen/logrus"

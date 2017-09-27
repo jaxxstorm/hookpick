@@ -1,5 +1,5 @@
-hash: 9b0e4e4933e9876526dab31be5dd26119f155ff386a0b223525062fb1405f18d
-updated: 2017-09-21T15:38:43.253012679-07:00
+hash: 5fc86b9d1f1a92703465626d2e6d3d569956410e173e715da77d36467e38f9c6
+updated: 2017-09-27T09:41:10.200468288-07:00
 imports:
 - name: github.com/acidlemon/go-dumper
   version: 30d2ddcbd5c445067be19e69888f10d6f3467ff7
@@ -29,7 +29,7 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/hashicorp/vault
-  version: 9afe7330e06e486ee326621624f2077d88bc9511
+  version: 6b29fb2b7f70ed538ee2b3c057335d706b6d4e36
   subpackages:
   - api
   - helper/compressutil
@@ -37,11 +37,6 @@ imports:
   - helper/parseutil
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
-- name: github.com/jaxxstorm/unseal
-  version: 4bb8ebf9efddc7a3e6a6d55314ee120b8c989f33
-  subpackages:
-  - gpg
-  - vault
 - name: github.com/magiconair/properties
   version: 51463bfca2576e06c62a8504b5c0f06d61312647
 - name: github.com/mitchellh/go-homedir

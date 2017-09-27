@@ -6,10 +6,6 @@ import:
   version: ^0.8.3
   subpackages:
   - api
-- package: github.com/jaxxstorm/unseal
-  version: ^0.3.2
-  subpackages:
-  - vault
 - package: github.com/spf13/cobra
 - package: github.com/spf13/viper
   version: ^1.0.0
