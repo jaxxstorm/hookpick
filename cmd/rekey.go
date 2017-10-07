@@ -26,7 +26,7 @@ import (
 
 	v "github.com/jaxxstorm/hookpick/vault"
 
-	"github.com/acidlemon/go-dumper"
+	//"github.com/acidlemon/go-dumper"
 	"github.com/hashicorp/vault/api"
 	"sync"
 )
@@ -122,7 +122,7 @@ and progresses the rekey`,
 		for _, d := range datacenters {
 			datacenter := getSpecificDatacenter()
 			if datacenter == d.Name || datacenter == "" {
-				
+
 				var gpg bool
 				var vaultKey string
 				var gpgKey string
@@ -133,7 +133,6 @@ and progresses the rekey`,
 				} else {
 					vaultKey = d.Key
 				}
-		
 
 				for _, h := range d.Hosts {
 					hostName := h.Name
@@ -165,12 +164,21 @@ and progresses the rekey`,
 										log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
 									}
 									if rekeyUpdate.Complete {
-										dump.Dump(rekeyUpdate)
+										var outputKey string
+										var outputPgp string
+										log.WithFields(log.Fields{"host": hostName}).Info("Rekey Complete")
+										for _, key := range rekeyUpdate.KeysB64 {
+											outputKey = key
+										}
+										for _, pgp := range rekeyUpdate.PGPFingerprints {
+											outputPgp = pgp
+										}
+										log.WithFields(log.Fields{"PGP Fingerprint": outputPgp, "Key": outputKey}).Info("New Key Generated")
 									} else {
-										newRekeyStatus, err := client.Sys().RekeyStatus()	
+										newRekeyStatus, err := client.Sys().RekeyStatus()
 										if err != nil {
 											log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
-										}	
+										}
 										log.WithFields(log.Fields{"host": hostName, "shares": newRekeyStatus.N, "threshold": newRekeyStatus.T, "nonce": newRekeyStatus.Nonce, "progress": newRekeyStatus.Progress, "required": newRekeyStatus.Required}).Info("Key submitted")
 									}
 								} else {
