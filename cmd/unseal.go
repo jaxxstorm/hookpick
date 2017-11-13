@@ -22,6 +22,7 @@ package cmd
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/hashicorp/vault/api"
 	v "github.com/jaxxstorm/hookpick/vault"
 
 	"github.com/spf13/cobra"
@@ -49,14 +50,16 @@ using the key provided`,
 			if datacenter == d.Name || datacenter == "" {
 
 				var gpg bool
-				var vaultKey string
+				var vaultKeys []string
 				var gpgKey string
 
-				gpg, gpgKey = getGpgKey(d.Key)
-				if gpg {
-					vaultKey = gpgKey
-				} else {
-					vaultKey = d.Key
+				for _, k := range d.Keys {
+					gpg, gpgKey = getGpgKey(k.Key)
+					if gpg {
+						vaultKeys = append(vaultKeys, gpgKey)
+					} else {
+						vaultKeys = append(vaultKeys, k.Key)
+					}
 				}
 
 				for _, h := range d.Hosts {
@@ -64,10 +67,8 @@ using the key provided`,
 					hostPort := h.Port
 
 					wg.Add(1)
-
 					go func(hostName string, hostPort int) {
 						defer wg.Done()
-
 						client, err := v.VaultClient(hostName, hostPort, caPath)
 						if err != nil {
 							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
@@ -76,19 +77,22 @@ using the key provided`,
 						// get the current status
 						_, init := v.Status(client)
 						if init {
-							if vaultKey != "" {
-								result, err := client.Sys().Unseal(vaultKey)
-								// error while unsealing
-								if err != nil {
-									log.WithFields(log.Fields{"host": hostName}).Error("Error running unseal operation")
+							if len(vaultKeys) > 0 {
+								var vaultStatus *api.SealStatusResponse
+								for _, vaultKey := range vaultKeys {
+									result, err := client.Sys().Unseal(vaultKey)
+									// error while unsealing
+									if err != nil {
+										log.WithFields(log.Fields{"host": hostName}).Error("Error running unseal operation")
+									}
+									vaultStatus = result
 								}
-
 								// if it's still sealed, print the progress
-								if result.Sealed == true {
-									log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Unseal operation performed")
+								if vaultStatus.Sealed == true {
+									log.WithFields(log.Fields{"host": hostName, "progress": vaultStatus.Progress, "threshold": vaultStatus.T}).Info("Unseal operation performed")
 									// otherwise, tell us it's unsealed!
 								} else {
-									log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Vault is unsealed!")
+									log.WithFields(log.Fields{"host": hostName, "progress": vaultStatus.Progress, "threshold": vaultStatus.T}).Info("Vault is unsealed!")
 								}
 							} else {
 								log.WithFields(log.Fields{"host": hostName}).Error("No Key Provided")
@@ -99,8 +103,8 @@ using the key provided`,
 						}
 					}(hostName, hostPort)
 				}
+				wg.Wait()
 			}
-			wg.Wait()
 		}
 	},
 }

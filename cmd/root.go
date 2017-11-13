@@ -39,8 +39,6 @@ var datacenter string
 
 var datacenters []config.Datacenter
 
-var hosts []config.Host
-
 // Version : This is for the Version command
 var Version string
 

@@ -2,11 +2,15 @@ package config
 
 type Datacenter struct {
 	Name  string
-	Key   string
+	Keys  []Key
 	Hosts []Host
 }
 
 type Host struct {
 	Name string
 	Port int
+}
+
+type Key struct {
+	Key string
 }
