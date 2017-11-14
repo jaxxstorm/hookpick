@@ -27,8 +27,9 @@ import (
 	v "github.com/jaxxstorm/hookpick/vault"
 
 	//"github.com/acidlemon/go-dumper"
-	"github.com/hashicorp/vault/api"
 	"sync"
+
+	"github.com/hashicorp/vault/api"
 )
 
 var shares int
@@ -76,6 +77,7 @@ and returns the client nonce needed for other rekey operators`,
 
 					// set up vault client
 					go func(hostName string, hostPort int) {
+						defer wg.Done()
 						client, err := v.VaultClient(hostName, hostPort, caPath)
 
 						if err != nil {
@@ -101,10 +103,9 @@ and returns the client nonce needed for other rekey operators`,
 						}
 					}(hostName, hostPort)
 				}
-
 			}
+			wg.Wait()
 		}
-		wg.Wait()
 	},
 }
 
@@ -124,14 +125,16 @@ and progresses the rekey`,
 			if datacenter == d.Name || datacenter == "" {
 
 				var gpg bool
-				var vaultKey string
+				var vaultKeys []string
 				var gpgKey string
 
-				gpg, gpgKey = getGpgKey(d.Key)
-				if gpg {
-					vaultKey = gpgKey
-				} else {
-					vaultKey = d.Key
+				for _, k := range d.Keys {
+					gpg, gpgKey = getGpgKey(k.Key)
+					if gpg {
+						vaultKeys = append(vaultKeys, gpgKey)
+					} else {
+						vaultKeys = append(vaultKeys, k.Key)
+					}
 				}
 
 				for _, h := range d.Hosts {
@@ -142,7 +145,6 @@ and progresses the rekey`,
 					go func(hostName string, hostPort int) {
 						defer wg.Done()
 						client, err := v.VaultClient(hostName, hostPort, caPath)
-
 						if err != nil {
 							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
 						}
@@ -159,27 +161,35 @@ and progresses the rekey`,
 									log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
 								}
 								if rekeyStatus.Started {
-									rekeyUpdate, err := client.Sys().RekeyUpdate(vaultKey, rekeyStatus.Nonce)
-									if err != nil {
-										log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
-									}
-									if rekeyUpdate.Complete {
-										var outputKey string
-										var outputPgp string
-										log.WithFields(log.Fields{"host": hostName}).Info("Rekey Complete")
-										for _, key := range rekeyUpdate.KeysB64 {
-											outputKey = key
-										}
-										for _, pgp := range rekeyUpdate.PGPFingerprints {
-											outputPgp = pgp
-										}
-										log.WithFields(log.Fields{"PGP Fingerprint": outputPgp, "Key": outputKey}).Info("New Key Generated")
-									} else {
-										newRekeyStatus, err := client.Sys().RekeyStatus()
+									for _, vaultKey := range vaultKeys {
+										rekeyUpdate, err := client.Sys().RekeyUpdate(vaultKey, rekeyStatus.Nonce)
 										if err != nil {
 											log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
 										}
-										log.WithFields(log.Fields{"host": hostName, "shares": newRekeyStatus.N, "threshold": newRekeyStatus.T, "nonce": newRekeyStatus.Nonce, "progress": newRekeyStatus.Progress, "required": newRekeyStatus.Required}).Info("Key submitted")
+										if rekeyUpdate.Complete {
+											var outputKeys []string
+											var outputPgps []string
+											log.WithFields(log.Fields{"host": hostName}).Info("Rekey Complete")
+											for _, key := range rekeyUpdate.KeysB64 {
+												outputKeys = append(outputKeys, key)
+											}
+											for _, pgp := range rekeyUpdate.PGPFingerprints {
+												outputPgps = append(outputPgps, pgp)
+											}
+											for _, outputPgp := range outputPgps {
+												log.WithFields(log.Fields{"PGP Fingerprint": outputPgp}).Info("New Key Generated")
+											}
+											for _, outputKey := range outputKeys {
+												log.WithFields(log.Fields{"Key": outputKey}).Info("New Key Generated")
+											}
+											break
+										} else {
+											newRekeyStatus, err := client.Sys().RekeyStatus()
+											if err != nil {
+												log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
+											}
+											log.WithFields(log.Fields{"host": hostName, "shares": newRekeyStatus.N, "threshold": newRekeyStatus.T, "nonce": newRekeyStatus.Nonce, "progress": newRekeyStatus.Progress, "required": newRekeyStatus.Required}).Info("Key submitted")
+										}
 									}
 								} else {
 									log.WithFields(log.Fields{"host": hostName}).Info("Rekey not started")
@@ -188,9 +198,9 @@ and progresses the rekey`,
 						}
 					}(hostName, hostPort)
 				}
+				wg.Wait()
 			}
 		}
-		wg.Wait()
 	},
 }
 

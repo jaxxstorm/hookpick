@@ -45,14 +45,18 @@ datacenters:
     port: 8200
   - name: consulserver-2.example.dc1.com
     port: 8200
-  key: <key>
+  keys:
+  - key: <key1>
+  - key: <key2>
   name: dc1
 - hosts:
   - name: consulserver-1.example.dc2.com
     port: 8200
   - name: consulserver-2.example.dc2.com
     port: 8200
-  key: <key>
+  keys:
+  - key: <key1>
+  - key: <key2>
   name: dc2
 ```
 
@@ -62,8 +66,9 @@ This can be converted to JSON or HCL as needed. Configuration options available 
  - `capath` - String - The path to a directory containing CA certificates for all Vaults
  - `datacenters` - Array of maps - an array of datacenters with nested options
    - `name` - String - The name of the datacenters
-   - `key` - String - The unseal key for that datacenter. Should be base64 encoded if the `gpg` flag is set to true
-   - `hosts` - Array - contains three config options:
+   - `keys` - Array - contains keys:
+     - `key` - String - The unseal key for that datacenter. Should be base64 encoded if the `gpg` flag is set to true
+   - `hosts` - Array - contains two config options:
      - `name` - String - Hostname of a Vault server
      - `port` - Int - The port that Vault server listens on
 
@@ -86,6 +91,3 @@ If you want to contribute, we use [glide](https://glide.sh/) for dependency mana
  - cloning this repo into `$GOPATH/src/github.com/jaxxstorm/hookpick`
  - run `glide install` from the directory
  - run `go build -o hookpick main.go`
-
-
-
