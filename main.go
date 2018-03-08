@@ -22,7 +22,8 @@ package main
 
 import "github.com/jaxxstorm/hookpick/cmd"
 
-var Version = "v0.0.2"
+// Version exported for version cmd
+var Version = "snapshot"
 
 func main() {
 	cmd.Execute(Version)
