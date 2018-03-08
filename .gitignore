@@ -16,6 +16,9 @@
 # hookpick config
 .hookpick.*
 
+# hookpick binary
+hookpick
+
 # goxc config
 *.local.*
 downloads
