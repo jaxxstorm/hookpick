@@ -24,8 +24,8 @@ brew:
     system "#{bin}/hookpick version"
   homepage: "https://leebriggs.co.uk/"
   description: "a tool to manage some operational concepts of Hashicorp Vault, specifically related to the painful process of unsealing, initialising and rekeying Vault."
-dockers:
-  -
-    binary: hookpick
-    image: jaxxstorm/hookpick
-    latest: true
+#dockers:
+  #-
+  #binary: hookpick
+  #image: jaxxstorm/hookpick
+  #latest: true
