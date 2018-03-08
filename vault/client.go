@@ -7,8 +7,12 @@ import (
 
 func VaultClient(hostName string, hostPort int, caPath string) (*api.Client, error) {
 
-	// format the URL with the passed host and por
-	url := fmt.Sprintf("https://%s:%v", hostName, hostPort)
+	// format the URL with the passed host and port
+	protocol := "https"
+	if caPath == "" {
+		protocol = "http"
+	}
+	url := fmt.Sprintf("%s://%s:%v", protocol, hostName, hostPort)
 
 	// create a vault config
 	config := &api.Config{Address: url}
