@@ -1,14 +1,17 @@
-FROM alpine
+FROM golang:1.9
 
-RUN apk add --update curl jq && \
-    rm -rf /var/cache/apk/*
+WORKDIR /go/src/github.com/jaxxstorm/hookpick
 
-# get the latest version from github API
+COPY . .
 
-RUN curl -s https://api.github.com/repos/jaxxstorm/hookpick/releases/latest | jq -r '.assets[]| select(.browser_download_url | contains("linux")) | .browser_download_url' | xargs curl -L -o /tmp/hookpick.tar.gz
+RUN go get -v github.com/Masterminds/glide
 
-RUN tar zxvf /tmp/hookpick.tar.gz
+RUN cd $GOPATH/src/github.com/Masterminds/glide && git checkout tags/v0.12.3 && go install && cd -
 
-RUN mv hookpick /usr/local/bin/hookpick
+RUN ls .
 
-ENTRYPOINT ["/usr/local/bin/hookpick"] 
+RUN glide install
+
+RUN go build -o hookpick main.go
+
+ENTRYPOINT ["./hookpick"] 
