@@ -6,6 +6,7 @@ import (
 	"os/exec"
 )
 
+// Decrypt GPG keys
 func Decrypt(key string) (string, error) {
 
 	var cmd exec.Cmd

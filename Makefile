@@ -2,11 +2,8 @@ RELEASE=$(shell git describe --always --long --dirty)
 PWD := $(shell pwd)
 DOCKER_REPO := jaxxstorm/hookpick
 
-clean:
-	@rm -rf ./dist
-
-build: clean
-	@goxc -pv=$(version)-$(RELEASE)
+build:
+	@go build -o hookpick main.go
 
 version:
 	@echo $(RELEASE)
