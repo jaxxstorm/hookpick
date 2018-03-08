@@ -1,33 +1,24 @@
----
 language: go
-
 go:
-  - 1.9.x
-
+- 1.9.x
 notifications:
   email: false
-
 before_script:
-  - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
-  - go get github.com/golang/lint/golint                        # Linter
-#  - go get honnef.co/go/tools/cmd/megacheck                     # Badass static analyzer/linter
-  - go get github.com/fzipp/gocyclo
-
+- GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
+- go get github.com/golang/lint/golint
+- go get github.com/fzipp/gocyclo
 before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y rpm
-  - gem install --no-ri --no-rdoc fpm
-
+- sudo apt-get -qq update
+- sudo apt-get install -y rpm
+- gem install --no-ri --no-rdoc fpm
 install:
-  - go get -v github.com/Masterminds/glide
-  - cd $GOPATH/src/github.com/Masterminds/glide && git checkout tags/v0.12.3 && go install && cd -
-  - glide install
-
+- go get -v github.com/Masterminds/glide
+- cd $GOPATH/src/github.com/Masterminds/glide && git checkout tags/v0.12.3 && go install
+  && cd -
+- glide install
 script: 
-    #- go test ./..
-    #- go vet ./...
-    #- go list ./... | grep -v /vendor/ | xargs -L1 golint
-
 after_success:
-  - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
-
+- test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+env:
+  global:
+    secure: dp+cFKatfneYBHckfWsgWfPNHrhVxHeLk3VpNZ9JVtE3eCOt+CNtn3Rf0VGOYxjsriAnY9Qsj+H3sf0MnwFqqkzVoy82/lHicUDAbbNvyKleWx54LFLI8rVcQ6OFu2VT43XClpjF4m5YvDhwyLulSFMPpRBF16Dn2jsnQ9IAROjCvhCQOniFgHmDgUlhY+qH6m1d2aYHoFjSlfgovklRI6g09knbWWDZDcMUmKtJudbRYebw7to/Fqb6N+h4dhWXByNuZiT9l1r53kfwgK5t/LwJjjA9dr6PbHZ+nSe6eEFh3s/51Rw0sewKhdT5VIzfNXL3dRrCIWMIk/l8RmRlR3Qdq7WBYKhDXeOlpKHOuWiU9LpNvt6mHjXKwnTbcENDpO4yeeaKkZdwypCGHKrQHtB0EEOOpH/1BbZgyC5VfLOtHweHvNJEKum8WvYI5SwplsbHl/ywYEaA/Q+hXe3lPaF0tbUiL0sqWma7FqqbS4ajEe1WXJCz6vy/LCYRJCBcIVQJL5lucMcjxRHq5N4d2ZO4f0gWQcBTETquX14DCyCbsUvUu4flzm3LE5Wcdj9LGDJr2CF7pNRF8rxRpn53F9XRenz/28r6eUeqAzxBlhhhF7grnVbtNxXp+kBkTLWr9s2IoC8jFbIq2rhVd7t9Efb4Ucuc24eUd07guUc839o=
