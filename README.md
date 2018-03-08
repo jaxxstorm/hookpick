@@ -64,6 +64,7 @@ This can be converted to JSON or HCL as needed. Configuration options available 
 
  - `gpg` - Boolean - Set to true if you init'd Vault with [GPG support](https://www.vaultproject.io/docs/concepts/pgp-gpg-keybase.html) enabled
  - `capath` - String - The path to a directory containing CA certificates for all Vaults
+ - `protocol` - String - The HTTP protocol to use when connecting to vaults (default: `https`)
  - `datacenters` - Array of maps - an array of datacenters with nested options
    - `name` - String - The name of the datacenters
    - `keys` - Array - contains keys:

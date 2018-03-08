@@ -60,6 +60,7 @@ and returns the client nonce needed for other rekey operators`,
 
 		datacenters := getDatacenters()
 		caPath := getCaPath()
+		protocol := getProtocol()
 
 		var wg sync.WaitGroup
 
@@ -78,7 +79,7 @@ and returns the client nonce needed for other rekey operators`,
 					// set up vault client
 					go func(hostName string, hostPort int) {
 						defer wg.Done()
-						client, err := v.VaultClient(hostName, hostPort, caPath)
+						client, err := v.VaultClient(hostName, hostPort, caPath, protocol)
 
 						if err != nil {
 							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
@@ -117,6 +118,7 @@ and progresses the rekey`,
 	Run: func(cmd *cobra.Command, args []string) {
 		datacenters := getDatacenters()
 		caPath := getCaPath()
+		protocol := getProtocol()
 
 		var wg sync.WaitGroup
 
@@ -144,7 +146,7 @@ and progresses the rekey`,
 					wg.Add(1)
 					go func(hostName string, hostPort int) {
 						defer wg.Done()
-						client, err := v.VaultClient(hostName, hostPort, caPath)
+						client, err := v.VaultClient(hostName, hostPort, caPath, protocol)
 						if err != nil {
 							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
 						}
@@ -213,6 +215,7 @@ from all the specified Vault servers`,
 
 		datacenters := getDatacenters()
 		caPath := getCaPath()
+		protocol := getProtocol()
 
 		var wg sync.WaitGroup
 
@@ -226,7 +229,7 @@ from all the specified Vault servers`,
 					wg.Add(1)
 					go func(hostName string, hostPort int) {
 						defer wg.Done()
-						client, err := v.VaultClient(hostName, hostPort, caPath)
+						client, err := v.VaultClient(hostName, hostPort, caPath, protocol)
 
 						if err != nil {
 							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
