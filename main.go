@@ -22,6 +22,7 @@ package main
 
 import "github.com/jaxxstorm/hookpick/cmd"
 
+// Version exported for version cmd
 var Version = "snapshot"
 
 func main() {

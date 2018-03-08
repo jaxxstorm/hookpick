@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
+// VaultClient Create a Vault Client
 func VaultClient(hostName string, hostPort int, caPath string) (*api.Client, error) {
 
 	// format the URL with the passed host and por

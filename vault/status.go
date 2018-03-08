@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
+// Status - Get vault status
 func Status(client *api.Client) (bool, bool) {
 
 	// statuses

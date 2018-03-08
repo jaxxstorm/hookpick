@@ -1,0 +1,33 @@
+---
+language: go
+
+go:
+  - 1.9.x
+
+notifications:
+  email: false
+
+before_script:
+  - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
+  - go get github.com/golang/lint/golint                        # Linter
+#  - go get honnef.co/go/tools/cmd/megacheck                     # Badass static analyzer/linter
+  - go get github.com/fzipp/gocyclo
+
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y rpm
+  - gem install --no-ri --no-rdoc fpm
+
+install:
+  - go get -v github.com/Masterminds/glide
+  - cd $GOPATH/src/github.com/Masterminds/glide && git checkout tags/v0.12.3 && go install && cd -
+  - glide install
+
+script: 
+    #- go test ./..
+    #- go vet ./...
+    #- go list ./... | grep -v /vendor/ | xargs -L1 golint
+
+after_success:
+  - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+
