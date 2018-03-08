@@ -1,0 +1,31 @@
+builds:
+  - main: main.go
+    binary: hookpick
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+# Archive customization
+archive:
+  format: tar.gz
+#sign:
+# artifacts: all
+brew:
+  github:
+    owner: jaxxstorm
+    name: homebrew-tap
+  commit_author:
+    name: Lee Briggs
+    email: lee@leebriggs.co.uk
+  folder: Formula
+  test: |
+    system "#{bin}/hookpick version"
+  homepage: "https://leebriggs.co.uk/"
+  description: "a tool to manage some operational concepts of Hashicorp Vault, specifically related to the painful process of unsealing, initialising and rekeying Vault."
+dockers:
+  -
+    binary: hookpick
+    image: jaxxstorm/hookpick
+    latest: true
