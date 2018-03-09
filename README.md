@@ -35,9 +35,9 @@ The app will look for the config file in the following directories, in order:
  - `$HOME/.hookpick.yaml`
  - `.hookpick.yaml` (in the directory you're running the binary from)
 
-An example configuratin file in yaml looks like this:
+An example configuration file in yaml looks like this:
 
-```bash
+```yml
 gpg: true
 datacenters:
 - hosts:
@@ -64,6 +64,7 @@ This can be converted to JSON or HCL as needed. Configuration options available 
 
  - `gpg` - Boolean - Set to true if you init'd Vault with [GPG support](https://www.vaultproject.io/docs/concepts/pgp-gpg-keybase.html) enabled
  - `capath` - String - The path to a directory containing CA certificates for all Vaults
+ - `protocol` - String - The HTTP protocol to use when connecting to vaults (default: `https`)
  - `datacenters` - Array of maps - an array of datacenters with nested options
    - `name` - String - The name of the datacenters
    - `keys` - Array - contains keys:
@@ -89,5 +90,6 @@ You can use _some_ of these environment variables if you wish when using hookpic
 If you want to contribute, we use [glide](https://glide.sh/) for dependency management, so it should be as simple as:
 
  - cloning this repo into `$GOPATH/src/github.com/jaxxstorm/hookpick`
+ - install glide if needed: `curl https://glide.sh/get | sh`
  - run `glide install` from the directory
  - run `go build -o hookpick main.go`

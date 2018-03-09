@@ -40,6 +40,7 @@ using the key provided`,
 
 		datacenters := getDatacenters()
 		caPath := getCaPath()
+		protocol := getProtocol()
 
 		var wg sync.WaitGroup
 
@@ -69,7 +70,7 @@ using the key provided`,
 					wg.Add(1)
 					go func(hostName string, hostPort int) {
 						defer wg.Done()
-						client, err := v.VaultClient(hostName, hostPort, caPath)
+						client, err := v.VaultClient(hostName, hostPort, caPath, protocol)
 						if err != nil {
 							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
 						}

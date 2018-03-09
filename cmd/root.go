@@ -116,6 +116,14 @@ func getSpecificDatacenter() string {
 
 }
 
+func getProtocol() string {
+
+	viper.SetDefault("protocol", "https")
+
+	return viper.GetString("protocol")
+
+}
+
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" { // enable ability to specify config file via flag
