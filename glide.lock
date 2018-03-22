@@ -48,7 +48,11 @@ imports:
   version: 256dc444b735e061061cf46c809487313d5b0065
 - name: github.com/sethgrid/pester
   version: ed9870dad3170c0b25ab9b11830cc57c3a7798fb
+- name: github.com/sirupsen/logrus
+  version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
 - name: github.com/Sirupsen/logrus
+  repo: https://github.com/sirupsen/logrus.git
+  vcs: git
   version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
 - name: github.com/spf13/afero
   version: bbf41cb36dffe15dff5bf7e18c447801e7ffe163
