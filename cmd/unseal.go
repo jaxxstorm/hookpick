@@ -59,7 +59,7 @@ using the key provided`,
 }
 
 type VaultKeyGetter func(*config.Datacenter, ConfigKeyGetter, gpg.StringDecrypter) []string
-type DoUnsealHost func(*sync.WaitGroup, *v.VaultHelper, []string) bool
+type HostSubmitImpl func(*sync.WaitGroup, *v.VaultHelper, []string) bool
 
 func ProcessUnseal(wg *sync.WaitGroup,
 	dc *config.Datacenter,
@@ -67,7 +67,7 @@ func ProcessUnseal(wg *sync.WaitGroup,
 	vhGetter v.VaultHelperGetter,
 	gpgHelper *gpg.GPGHelper,
 	vaultKeysGetter VaultKeyGetter,
-	unsealHost DoUnsealHost) {
+	unsealHost HostSubmitImpl) {
 
 	defer wg.Done()
 

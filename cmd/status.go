@@ -50,13 +50,13 @@ specified in the configuration file`,
 	},
 }
 
-type HostGetter func(*sync.WaitGroup, *v.VaultHelper)
+type HostImpl func(*sync.WaitGroup, *v.VaultHelper)
 
 func ProcessStatus(wg *sync.WaitGroup,
 	dc *config.Datacenter,
 	configHelper *ConfigHelper,
 	vhGetter v.VaultHelperGetter,
-	hostGetter HostGetter) {
+	hostStatusGetter HostImpl) {
 
 	defer wg.Done()
 
@@ -70,7 +70,7 @@ func ProcessStatus(wg *sync.WaitGroup,
 		for _, host := range dc.Hosts {
 			hwg.Add(1)
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
-			go hostGetter(&hwg, vaultHelper)
+			go hostStatusGetter(&hwg, vaultHelper)
 		}
 		hwg.Wait()
 	}
