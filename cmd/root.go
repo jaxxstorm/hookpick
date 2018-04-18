@@ -159,5 +159,3 @@ func initConfig() {
 		fmt.Println("Error reading config file: ", err)
 	}
 }
-
-

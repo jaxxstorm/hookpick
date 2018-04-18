@@ -67,7 +67,7 @@ and returns the client nonce needed for other rekey operators`,
 		// loop through datacenters
 		for _, dc := range allDCs {
 			wg.Add(1)
-			go ProcessRekey(&wg, &dc, configHelper, v.NewVaultHelper, HostRekeyInit)
+			go ProcessRekey(&wg, dc, configHelper, v.NewVaultHelper, HostRekeyInit)
 		}
 		wg.Wait()
 	},
@@ -87,7 +87,7 @@ and progresses the rekey`,
 
 		for _, dc := range allDCs {
 			wg.Add(1)
-			go ProcessRekeySubmit(&wg, &dc, configHelper, v.NewVaultHelper, gpgHelper, GetVaultKeys, HostRekeySubmit)
+			go ProcessRekeySubmit(&wg, dc, configHelper, v.NewVaultHelper, gpgHelper, GetVaultKeys, HostRekeySubmit)
 		}
 		wg.Wait()
 	},
@@ -107,14 +107,17 @@ from all the specified Vault servers`,
 
 		for _, dc := range allDCs {
 			wg.Add(1)
-			go ProcessRekey(&wg, &dc, configHelper, v.NewVaultHelper, HostRekeyStatus)
+			log.WithFields(log.Fields{
+				"datacenter": dc.Name,
+			}).Debugln("Starting to process rekey")
+			go ProcessRekey(&wg, dc, configHelper, v.NewVaultHelper, HostRekeyStatus)
 		}
 		wg.Wait()
 	},
 }
 
 func ProcessRekey(wg *sync.WaitGroup,
-	dc *config.Datacenter,
+	dc config.Datacenter,
 	configHelper *ConfigHelper,
 	vhGetter v.VaultHelperGetter,
 	hostRekeyInit HostImpl) {
@@ -124,11 +127,19 @@ func ProcessRekey(wg *sync.WaitGroup,
 	caPath := configHelper.GetCAPath()
 	protocol := configHelper.GetURLScheme()
 
+	log.WithFields(log.Fields{
+		"datacenter": dc.Name,
+		"dc":         specificDC,
+	}).Debugln("Processing rekey for")
+
 	if specificDC == dc.Name || specificDC == "" {
 
 		hwg := sync.WaitGroup{}
 		for _, host := range dc.Hosts {
 			hwg.Add(1)
+			log.WithFields(log.Fields{
+				"host": host.Name,
+			}).Debugln("Starting to process rekey")
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
 			go hostRekeyInit(&hwg, vaultHelper)
 		}
@@ -137,7 +148,7 @@ func ProcessRekey(wg *sync.WaitGroup,
 }
 
 func ProcessRekeySubmit(wg *sync.WaitGroup,
-	dc *config.Datacenter,
+	dc config.Datacenter,
 	configHelper *ConfigHelper,
 	vhGetter v.VaultHelperGetter,
 	gpgHelper *gpg.GPGHelper,
@@ -149,6 +160,11 @@ func ProcessRekeySubmit(wg *sync.WaitGroup,
 	caPath := configHelper.GetCAPath()
 	protocol := configHelper.GetURLScheme()
 
+	log.WithFields(log.Fields{
+		"datacenter": dc.Name,
+		"dc":         specificDC,
+	}).Debugln("Processing rekey for")
+
 	if specificDC == dc.Name || specificDC == "" {
 
 		vaultKeys := vaultKeysGetter(dc, configHelper.GetGPGKey, gpgHelper.Decrypt)
@@ -156,6 +172,10 @@ func ProcessRekeySubmit(wg *sync.WaitGroup,
 		hwg := sync.WaitGroup{}
 		for _, host := range dc.Hosts {
 			hwg.Add(1)
+			log.WithFields(log.Fields{
+				"host": host.Name,
+			}).Debugln("Starting to process rekey")
+
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
 			go submitHostRekey(&hwg, vaultHelper, vaultKeys)
 		}
@@ -164,11 +184,19 @@ func ProcessRekeySubmit(wg *sync.WaitGroup,
 }
 
 func HostRekeyInit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
+	defer wg.Done()
 	client, err := vaultHelper.GetVaultClient()
 
 	if err != nil {
-		log.WithFields(log.Fields{"host": vaultHelper.HostName, "port": vaultHelper.Port}).Error(err)
+		log.WithFields(log.Fields{
+			"host": vaultHelper.HostName,
+			"port": vaultHelper.Port,
+		}).Errorln(err)
 	}
+
+	log.WithFields(log.Fields{
+		"host": vaultHelper.HostName,
+	}).Debugln("Starting rekey init")
 
 	// check init status
 	sealed, init := vaultHelper.GetStatus(client)
@@ -180,7 +208,7 @@ func HostRekeyInit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 		if result.IsSelf == true {
 			rekeyResult, err := client.Sys().RekeyInit(&api.RekeyInitRequest{SecretShares: shares, SecretThreshold: threshold})
 			if err != nil {
-				log.Error("Rekey init error ", err)
+				log.Errorln("Rekey init error ", err)
 			}
 			if rekeyResult.Started {
 				log.WithFields(log.Fields{
@@ -188,7 +216,7 @@ func HostRekeyInit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 					"shares":    rekeyResult.N,
 					"threshold": rekeyResult.T,
 					"nonce":     rekeyResult.Nonce,
-				}).Info("Rekey Started. Please supply your keys.")
+				}).Infoln("Rekey Started. Please supply your keys.")
 			}
 		}
 	}
@@ -196,12 +224,15 @@ func HostRekeyInit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 
 func HostRekeyStatus(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 	defer wg.Done()
-
 	client, err := vaultHelper.GetVaultClient()
 
 	if err != nil {
 		log.WithFields(log.Fields{"host": vaultHelper.HostName, "port": vaultHelper.Port}).Error(err)
 	}
+
+	log.WithFields(log.Fields{
+		"host": vaultHelper.HostName,
+	}).Debugln("Starting rekey status")
 
 	// check init status
 	sealed, init := vaultHelper.GetStatus(client)
@@ -213,16 +244,28 @@ func HostRekeyStatus(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 			rekeyStatus, err := client.Sys().RekeyStatus()
 
 			if err != nil {
-				log.WithFields(log.Fields{"host": vaultHelper.HostName, "port": vaultHelper.Port}).Error(err)
+				log.WithFields(log.Fields{
+					"host":  vaultHelper.HostName,
+					"port":  vaultHelper.Port,
+					"error": err,
+				}).Errorln("Error getting rekey status")
 			}
 			if rekeyStatus.Started {
-				log.WithFields(log.Fields{"host": vaultHelper.HostName, "shares": rekeyStatus.N, "threshold": rekeyStatus.T, "nonce": rekeyStatus.Nonce, "progress": rekeyStatus.Progress, "required": rekeyStatus.Required}).Info("Rekey has been started")
+				log.WithFields(log.Fields{
+					"host":      vaultHelper.HostName,
+					"shares":    rekeyStatus.N,
+					"threshold": rekeyStatus.T,
+					"nonce":     rekeyStatus.Nonce,
+					"progress":  rekeyStatus.Progress,
+					"required":  rekeyStatus.Required,
+				}).Infoln("Rekey has been started")
 			} else {
-				log.WithFields(log.Fields{"host": vaultHelper.HostName}).Info("Rekey not started")
+				log.WithFields(log.Fields{
+					"host": vaultHelper.HostName,
+				}).Infoln("Rekey not started")
 			}
 		}
 	}
-
 }
 
 func HostRekeySubmit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys []string) bool {
@@ -230,10 +273,15 @@ func HostRekeySubmit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys [
 	client, err := vaultHelper.GetVaultClient()
 	if err != nil {
 		log.WithFields(log.Fields{
-			"host": vaultHelper.HostName,
-			"port": vaultHelper.Port,
-		}).Error(err)
+			"host":  vaultHelper.HostName,
+			"port":  vaultHelper.Port,
+			"error": err,
+		}).Errorln("Error getting vault client")
 	}
+
+	log.WithFields(log.Fields{
+		"host": vaultHelper.HostName,
+	}).Debugln("Starting rekey submit")
 
 	// check init status
 	sealed, init := vaultHelper.GetStatus(client)
@@ -245,9 +293,11 @@ func HostRekeySubmit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys [
 			rekeyStatus, err := client.Sys().RekeyStatus()
 			if err != nil {
 				log.WithFields(log.Fields{
-					"host": vaultHelper.HostName,
-					"port": vaultHelper.Port,
-				}).Error(err)
+					"host":  vaultHelper.HostName,
+					"port":  vaultHelper.Port,
+					"error": err,
+				}).Errorln("Error getting rekey status")
+
 				return false
 			}
 
@@ -256,9 +306,11 @@ func HostRekeySubmit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys [
 					rekeyUpdate, err := client.Sys().RekeyUpdate(vaultKey, rekeyStatus.Nonce)
 					if err != nil {
 						log.WithFields(log.Fields{
-							"host": vaultHelper.HostName,
-							"port": vaultHelper.Port,
-						}).Error(err)
+							"host":  vaultHelper.HostName,
+							"port":  vaultHelper.Port,
+							"error": err,
+						}).Errorln("Error updating rekey")
+
 						continue
 					}
 
@@ -282,13 +334,13 @@ func HostRekeySubmit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys [
 						for _, outputPgp := range outputPgps {
 							log.WithFields(log.Fields{
 								"PGP Fingerprint": outputPgp,
-							}).Info("New Key Generated")
+							}).Infoln("New Key Generated")
 						}
 
 						for _, outputKey := range outputKeys {
 							log.WithFields(log.Fields{
 								"Key": outputKey,
-							}).Info("New Key Generated")
+							}).Infoln("New Key Generated")
 						}
 
 						break
@@ -296,9 +348,10 @@ func HostRekeySubmit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys [
 						newRekeyStatus, err := client.Sys().RekeyStatus()
 						if err != nil {
 							log.WithFields(log.Fields{
-								"host": vaultHelper.HostName,
-								"port": vaultHelper.Port,
-							}).Error(err)
+								"host":  vaultHelper.HostName,
+								"port":  vaultHelper.Port,
+								"error": err,
+							}).Errorln("Error getting rekey status")
 						}
 						log.WithFields(log.Fields{
 							"host":      vaultHelper.HostName,
@@ -307,11 +360,13 @@ func HostRekeySubmit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys [
 							"nonce":     newRekeyStatus.Nonce,
 							"progress":  newRekeyStatus.Progress,
 							"required":  newRekeyStatus.Required,
-						}).Info("Key submitted")
+						}).Infoln("Key submitted")
 					}
 				}
 			} else {
-				log.WithFields(log.Fields{"host": vaultHelper.HostName}).Info("Rekey not started")
+				log.WithFields(log.Fields{
+					"host": vaultHelper.HostName,
+				}).Infoln("Rekey not started")
 			}
 		}
 	}
