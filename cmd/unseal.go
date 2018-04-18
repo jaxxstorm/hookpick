@@ -79,7 +79,7 @@ func ProcessUnseal(wg *sync.WaitGroup,
 	log.WithFields(log.Fields{
 		"datacenter": dc.Name,
 		"dc":         specificDC,
-	}).Debugln("Processing unseal for")
+	}).Debugln("Processing datacenter")
 
 	if specificDC == dc.Name || specificDC == "" {
 
@@ -90,7 +90,7 @@ func ProcessUnseal(wg *sync.WaitGroup,
 			hwg.Add(1)
 			log.WithFields(log.Fields{
 				"host": host.Name,
-			}).Infoln("Processing unseal for")
+			}).Debugln("Processing host")
 
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
 			go unsealHost(&hwg, vaultHelper, vaultKeys)
