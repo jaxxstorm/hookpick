@@ -2,11 +2,13 @@ package vault
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/hashicorp/vault/api"
+	vaultapi "github.com/hashicorp/vault/api"
 )
 
+type VaultStatusGetter func(client *vaultapi.Client) (bool, bool)
+
 // Status - Get vault status
-func Status(client *api.Client) (bool, bool) {
+func Status(client *vaultapi.Client) (bool, bool) {
 
 	// statuses
 	initStatus, err := client.Sys().InitStatus()
