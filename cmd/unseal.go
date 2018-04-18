@@ -51,7 +51,8 @@ using the key provided`,
 			wg.Add(1)
 			log.WithFields(log.Fields{
 				"datacenter": dc.Name,
-			}).Infoln("Start Vault unseal")
+			}).Debugln("Starting to process Vault unseal")
+
 			go ProcessUnseal(&wg, dc, configHelper, v.NewVaultHelper, gpgHelper, GetVaultKeys, UnsealHost)
 		}
 		wg.Wait()
@@ -75,6 +76,11 @@ func ProcessUnseal(wg *sync.WaitGroup,
 	caPath := configHelper.GetCAPath()
 	protocol := configHelper.GetURLScheme()
 
+	log.WithFields(log.Fields{
+		"datacenter": dc.Name,
+		"dc":         specificDC,
+	}).Debugln("Processing unseal for")
+
 	if specificDC == dc.Name || specificDC == "" {
 
 		vaultKeys := vaultKeysGetter(dc, configHelper.GetGPGKey, gpgHelper.Decrypt)
@@ -82,6 +88,10 @@ func ProcessUnseal(wg *sync.WaitGroup,
 		hwg := sync.WaitGroup{}
 		for _, host := range dc.Hosts {
 			hwg.Add(1)
+			log.WithFields(log.Fields{
+				"host": host.Name,
+			}).Infoln("Processing unseal for")
+
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
 			go unsealHost(&hwg, vaultHelper, vaultKeys)
 		}
@@ -105,13 +115,18 @@ func GetVaultKeys(dc config.Datacenter, gpgKeyGetter ConfigKeyGetter, keyDecrypt
 
 func UnsealHost(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys []string) bool {
 	defer wg.Done()
+
+	log.WithFields(log.Fields{
+		"host": vaultHelper.HostName,
+	}).Debugln("Starting unseal")
+
 	client, err := vaultHelper.GetVaultClient()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"host":  vaultHelper.HostName,
 			"port":  vaultHelper.Port,
 			"error": err,
-		}).Error("Error creating Vault API Client")
+		}).Errorln("Error creating Vault API Client")
 	}
 
 	// get the current status
@@ -120,7 +135,7 @@ func UnsealHost(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys []stri
 		// sad times, not ready to be unsealed
 		log.WithFields(log.Fields{
 			"host": vaultHelper.HostName,
-		}).Error("Vault is not ready to be unsealed")
+		}).Errorln("Vault is not ready to be unsealed")
 		return init
 	}
 
@@ -132,7 +147,7 @@ func UnsealHost(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys []stri
 			if err != nil {
 				log.WithFields(log.Fields{
 					"host": vaultHelper.HostName,
-				}).Error("Error running unseal operation")
+				}).Errorln("Error running unseal operation")
 			}
 			vaultStatus = result
 		}
@@ -143,19 +158,19 @@ func UnsealHost(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys []stri
 				"host":      vaultHelper.HostName,
 				"progress":  vaultStatus.Progress,
 				"threshold": vaultStatus.T,
-			}).Info("Unseal operation performed")
+			}).Infoln("Unseal operation performed")
 			// otherwise, tell us it's unsealed!
 		} else {
 			log.WithFields(log.Fields{
 				"host":      vaultHelper.HostName,
 				"progress":  vaultStatus.Progress,
 				"threshold": vaultStatus.T,
-			}).Info("Vault is unsealed!")
+			}).Infoln("Vault is unsealed!")
 		}
 	} else {
 		log.WithFields(log.Fields{
 			"host": vaultHelper.HostName,
-		}).Error("No Key Provided")
+		}).Errorln("No Key Provided")
 	}
 
 	return true

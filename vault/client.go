@@ -7,10 +7,10 @@ import (
 )
 
 type VaultHelper struct {
-	HostName string
-	Port     string
-	CAPath   string
-	Protocol string
+	HostName  string
+	Port      string
+	CAPath    string
+	Protocol  string
 	GetStatus VaultStatusGetter
 }
 
@@ -18,10 +18,10 @@ type VaultHelperGetter func(host, certpath, protocol, port string, sg VaultStatu
 
 func NewVaultHelper(host, certpath, protocol, port string, sg VaultStatusGetter) *VaultHelper {
 	return &VaultHelper{
-		HostName: host,
-		Port:     port,
-		CAPath:   certpath,
-		Protocol: protocol,
+		HostName:  host,
+		Port:      port,
+		CAPath:    certpath,
+		Protocol:  protocol,
 		GetStatus: sg,
 	}
 }

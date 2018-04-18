@@ -46,7 +46,7 @@ specified in the configuration file`,
 			wg.Add(1)
 			log.WithFields(log.Fields{
 				"datacenter": dc.Name,
-			}).Infoln("Starting to process")
+			}).Debugln("Starting to process")
 			go ProcessStatus(&wg, dc, configHelper, v.NewVaultHelper, GetHostStatus)
 		}
 		wg.Wait()
@@ -69,18 +69,21 @@ func ProcessStatus(wg *sync.WaitGroup,
 
 	log.WithFields(log.Fields{
 		"datacenter": dc.Name,
-		"dc": specificDC,
-	}).Infoln("Processing status for")
+		"dc":         specificDC,
+	}).Debugln("Processing status for")
 
 	if specificDC == dc.Name || specificDC == "" {
 
 		hwg := sync.WaitGroup{}
 		for _, host := range dc.Hosts {
 			hwg.Add(1)
+
 			log.WithFields(log.Fields{
 				"host": host.Name,
 			}).Infoln("Processing status for")
+
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
+
 			go hostStatusGetter(&hwg, vaultHelper)
 		}
 		hwg.Wait()
@@ -91,27 +94,45 @@ func GetHostStatus(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 	// set hostnames for waitgroup
 
 	defer wg.Done()
+
+	log.WithFields(log.Fields{
+		"host": vaultHelper.HostName,
+	}).Debugln("Starting status fetch")
+
 	client, err := vaultHelper.GetVaultClient()
 
 	if err != nil {
-		log.WithFields(log.Fields{"host": vaultHelper.HostName}).Error("Error creating vault client: ", err)
+		log.WithFields(log.Fields{
+			"host":  vaultHelper.HostName,
+			"error": err,
+		}).Errorln("Error creating vault client")
 	}
 
 	// get the seal status
 	result, err := client.Sys().SealStatus()
 
 	if err != nil {
-		log.WithFields(log.Fields{"host": vaultHelper.HostName}).Error("Error getting seal status: ", err)
+		log.WithFields(log.Fields{
+			"host":  vaultHelper.HostName,
+			"error": err,
+		}).Errorln("Error getting seal status")
 	} else {
 		// only check the seal status if we have a client
 		if result.Sealed == true {
-			log.WithFields(log.Fields{"host": vaultHelper.HostName, "progress": result.Progress, "threshold": result.T}).Error("Vault is sealed!")
+			log.WithFields(log.Fields{
+				"host":      vaultHelper.HostName,
+				"progress":  result.Progress,
+				"threshold": result.T,
+			}).Errorln("Vault is sealed!")
 		} else {
-			log.WithFields(log.Fields{"host": vaultHelper.HostName, "progress": result.Progress, "threshold": result.T}).Info("Vault is unsealed!")
+			log.WithFields(log.Fields{
+				"host":      vaultHelper.HostName,
+				"progress":  result.Progress,
+				"threshold": result.T,
+			}).Infoln("Vault is unsealed!")
 		}
 	}
 }
-
 
 func init() {
 	RootCmd.AddCommand(statusCmd)
