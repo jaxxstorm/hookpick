@@ -130,7 +130,7 @@ func ProcessRekey(wg *sync.WaitGroup,
 		for _, host := range dc.Hosts {
 			hwg.Add(1)
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
-			hostRekeyInit(&hwg, vaultHelper)
+			go hostRekeyInit(&hwg, vaultHelper)
 		}
 		hwg.Wait()
 	}

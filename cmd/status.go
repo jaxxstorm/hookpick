@@ -81,7 +81,7 @@ func ProcessStatus(wg *sync.WaitGroup,
 				"host": host.Name,
 			}).Infoln("Processing status for")
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
-			hostStatusGetter(&hwg, vaultHelper)
+			go hostStatusGetter(&hwg, vaultHelper)
 		}
 		hwg.Wait()
 	}
