@@ -52,17 +52,17 @@ using the key provided`,
 			log.WithFields(log.Fields{
 				"datacenter": dc.Name,
 			}).Infoln("Start Vault unseal")
-			go ProcessUnseal(&wg, &dc, configHelper, v.NewVaultHelper, gpgHelper, GetVaultKeys, UnsealHost)
+			go ProcessUnseal(&wg, dc, configHelper, v.NewVaultHelper, gpgHelper, GetVaultKeys, UnsealHost)
 		}
 		wg.Wait()
 	},
 }
 
-type VaultKeyGetter func(*config.Datacenter, ConfigKeyGetter, gpg.StringDecrypter) []string
+type VaultKeyGetter func(config.Datacenter, ConfigKeyGetter, gpg.StringDecrypter) []string
 type HostSubmitImpl func(*sync.WaitGroup, *v.VaultHelper, []string) bool
 
 func ProcessUnseal(wg *sync.WaitGroup,
-	dc *config.Datacenter,
+	dc config.Datacenter,
 	configHelper *ConfigHelper,
 	vhGetter v.VaultHelperGetter,
 	gpgHelper *gpg.GPGHelper,
@@ -89,7 +89,7 @@ func ProcessUnseal(wg *sync.WaitGroup,
 	}
 }
 
-func GetVaultKeys(dc *config.Datacenter, gpgKeyGetter ConfigKeyGetter, keyDecrypter gpg.StringDecrypter) []string {
+func GetVaultKeys(dc config.Datacenter, gpgKeyGetter ConfigKeyGetter, keyDecrypter gpg.StringDecrypter) []string {
 	var vaultKeys []string
 	for _, key := range dc.Keys {
 		gpg, gpgKey := gpgKeyGetter(key.Key, keyDecrypter)

@@ -44,7 +44,10 @@ specified in the configuration file`,
 
 		for _, dc := range datacenters {
 			wg.Add(1)
-			go ProcessStatus(&wg, &dc, configHelper, v.NewVaultHelper, GetHostStatus)
+			log.WithFields(log.Fields{
+				"datacenter": dc.Name,
+			}).Infoln("Starting to process")
+			go ProcessStatus(&wg, dc, configHelper, v.NewVaultHelper, GetHostStatus)
 		}
 		wg.Wait()
 	},
@@ -53,7 +56,7 @@ specified in the configuration file`,
 type HostImpl func(*sync.WaitGroup, *v.VaultHelper)
 
 func ProcessStatus(wg *sync.WaitGroup,
-	dc *config.Datacenter,
+	dc config.Datacenter,
 	configHelper *ConfigHelper,
 	vhGetter v.VaultHelperGetter,
 	hostStatusGetter HostImpl) {
@@ -64,13 +67,21 @@ func ProcessStatus(wg *sync.WaitGroup,
 	caPath := configHelper.GetCAPath()
 	protocol := configHelper.GetURLScheme()
 
+	log.WithFields(log.Fields{
+		"datacenter": dc.Name,
+		"dc": specificDC,
+	}).Infoln("Processing status for")
+
 	if specificDC == dc.Name || specificDC == "" {
 
 		hwg := sync.WaitGroup{}
 		for _, host := range dc.Hosts {
 			hwg.Add(1)
+			log.WithFields(log.Fields{
+				"host": host.Name,
+			}).Infoln("Processing status for")
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
-			go hostStatusGetter(&hwg, vaultHelper)
+			hostStatusGetter(&hwg, vaultHelper)
 		}
 		hwg.Wait()
 	}
@@ -80,7 +91,6 @@ func GetHostStatus(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 	// set hostnames for waitgroup
 
 	defer wg.Done()
-
 	client, err := vaultHelper.GetVaultClient()
 
 	if err != nil {

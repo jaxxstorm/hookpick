@@ -67,7 +67,7 @@ and returns the client nonce needed for other rekey operators`,
 		// loop through datacenters
 		for _, dc := range allDCs {
 			wg.Add(1)
-			go ProcessRekey(&wg, &dc, configHelper, v.NewVaultHelper, HostRekeyInit)
+			go ProcessRekey(&wg, dc, configHelper, v.NewVaultHelper, HostRekeyInit)
 		}
 		wg.Wait()
 	},
@@ -87,7 +87,7 @@ and progresses the rekey`,
 
 		for _, dc := range allDCs {
 			wg.Add(1)
-			go ProcessRekeySubmit(&wg, &dc, configHelper, v.NewVaultHelper, gpgHelper, GetVaultKeys, HostRekeySubmit)
+			go ProcessRekeySubmit(&wg, dc, configHelper, v.NewVaultHelper, gpgHelper, GetVaultKeys, HostRekeySubmit)
 		}
 		wg.Wait()
 	},
@@ -107,14 +107,14 @@ from all the specified Vault servers`,
 
 		for _, dc := range allDCs {
 			wg.Add(1)
-			go ProcessRekey(&wg, &dc, configHelper, v.NewVaultHelper, HostRekeyStatus)
+			go ProcessRekey(&wg, dc, configHelper, v.NewVaultHelper, HostRekeyStatus)
 		}
 		wg.Wait()
 	},
 }
 
 func ProcessRekey(wg *sync.WaitGroup,
-	dc *config.Datacenter,
+	dc config.Datacenter,
 	configHelper *ConfigHelper,
 	vhGetter v.VaultHelperGetter,
 	hostRekeyInit HostImpl) {
@@ -130,14 +130,14 @@ func ProcessRekey(wg *sync.WaitGroup,
 		for _, host := range dc.Hosts {
 			hwg.Add(1)
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
-			go hostRekeyInit(&hwg, vaultHelper)
+			hostRekeyInit(&hwg, vaultHelper)
 		}
 		hwg.Wait()
 	}
 }
 
 func ProcessRekeySubmit(wg *sync.WaitGroup,
-	dc *config.Datacenter,
+	dc config.Datacenter,
 	configHelper *ConfigHelper,
 	vhGetter v.VaultHelperGetter,
 	gpgHelper *gpg.GPGHelper,
@@ -164,6 +164,7 @@ func ProcessRekeySubmit(wg *sync.WaitGroup,
 }
 
 func HostRekeyInit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
+	defer wg.Done()
 	client, err := vaultHelper.GetVaultClient()
 
 	if err != nil {
@@ -196,7 +197,6 @@ func HostRekeyInit(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 
 func HostRekeyStatus(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
 	defer wg.Done()
-
 	client, err := vaultHelper.GetVaultClient()
 
 	if err != nil {
