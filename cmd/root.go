@@ -33,14 +33,14 @@ import (
 	g "github.com/jaxxstorm/hookpick/gpg"
 )
 
-var cfgFile string
-
-var datacenter string
-
-var datacenters []config.Datacenter
-
-// Version : This is for the Version command
-var Version string
+var (
+	cfgFile     string
+	datacenter  string
+	datacenters []config.Datacenter
+	debug       bool
+	// Version : This is for the Version command
+	Version string
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -65,6 +65,7 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hookpick.yaml)")
 	RootCmd.PersistentFlags().StringVarP(&datacenter, "datacenter", "d", "", "datacenter to operate on")
+	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging")
 	viper.BindPFlag("datacenter", RootCmd.PersistentFlags().Lookup("datacenter"))
 
 	if os.Getenv("VAULT_ADDR") != "" {
@@ -157,5 +158,8 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Error reading config file: ", err)
+	}
+	if debug {
+		log.SetLevel(log.DebugLevel)
 	}
 }
