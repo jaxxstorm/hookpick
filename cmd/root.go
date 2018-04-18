@@ -72,7 +72,26 @@ func init() {
 	}
 }
 
-func getDatacenters() []config.Datacenter {
+type ConfigStringGetter func() string
+type ConfigKeyGetter func(string, g.StringDecrypter) (bool, string)
+
+type ConfigHelper struct {
+	GetDC        ConfigStringGetter
+	GetCAPath    ConfigStringGetter
+	GetURLScheme ConfigStringGetter
+	GetGPGKey    ConfigKeyGetter
+}
+
+func NewConfigHelper(dcgetter, cagetter, schemegetter ConfigStringGetter, gpgkeygetter ConfigKeyGetter) *ConfigHelper {
+	return &ConfigHelper{
+		GetDC:        dcgetter,
+		GetCAPath:    cagetter,
+		GetURLScheme: schemegetter,
+		GetGPGKey:    gpgkeygetter,
+	}
+}
+
+func GetDatacenters() []config.Datacenter {
 
 	err := viper.UnmarshalKey("datacenters", &datacenters)
 
@@ -84,20 +103,20 @@ func getDatacenters() []config.Datacenter {
 
 }
 
-func getCaPath() string {
+func GetCaPath() string {
 
 	return viper.GetString("capath")
 
 }
 
-func getGpgKey(key string) (bool, string) {
+func GetGpgKey(key string, keyDecrypt g.StringDecrypter) (bool, string) {
 
 	gpg := viper.GetBool("gpg")
 	var vaultKey string
 	var err error
 
 	if gpg == true {
-		vaultKey, err = g.Decrypt(key)
+		vaultKey, err = keyDecrypt(key)
 		if err != nil {
 			log.Fatal("GPG Decryption Error: ", err)
 		}
@@ -110,13 +129,13 @@ func getGpgKey(key string) (bool, string) {
 
 }
 
-func getSpecificDatacenter() string {
+func GetSpecificDatacenter() string {
 
 	return viper.GetString("datacenter")
 
 }
 
-func getProtocol() string {
+func GetProtocol() string {
 
 	viper.SetDefault("protocol", "https")
 
@@ -140,3 +159,5 @@ func initConfig() {
 		fmt.Println("Error reading config file: ", err)
 	}
 }
+
+

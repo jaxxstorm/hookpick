@@ -6,6 +6,18 @@ import (
 	"os/exec"
 )
 
+type StringDecrypter func(string) (string, error)
+
+type GPGHelper struct {
+	Decrypt StringDecrypter
+}
+
+func NewGPGHelper(decrypter StringDecrypter) *GPGHelper {
+	return &GPGHelper{
+		Decrypt: decrypter,
+	}
+}
+
 // Decrypt GPG keys
 func Decrypt(key string) (string, error) {
 
