@@ -76,10 +76,15 @@ func ProcessUnseal(wg *sync.WaitGroup,
 	caPath := configHelper.GetCAPath()
 	protocol := configHelper.GetURLScheme()
 
-	log.WithFields(log.Fields{
-		"datacenter": dc.Name,
-		"dc":         specificDC,
-	}).Debugln("Processing unseal for")
+	dcLogger := log.WithFields(log.Fields{"datacenter": dc.Name})
+
+	if specificDC != "" {
+		dcLogger = dcLogger.WithFields(
+			log.Fields{
+				"specified_dc": specificDC,
+			})
+	}
+	dcLogger.Debugln("Processing datacenter")
 
 	if specificDC == dc.Name || specificDC == "" {
 
@@ -90,7 +95,7 @@ func ProcessUnseal(wg *sync.WaitGroup,
 			hwg.Add(1)
 			log.WithFields(log.Fields{
 				"host": host.Name,
-			}).Infoln("Processing unseal for")
+			}).Debugln("Processing host")
 
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
 			go unsealHost(&hwg, vaultHelper, vaultKeys)
