@@ -70,7 +70,7 @@ func ProcessStatus(wg *sync.WaitGroup,
 	log.WithFields(log.Fields{
 		"datacenter": dc.Name,
 		"dc":         specificDC,
-	}).Debugln("Processing status for")
+	}).Debugln("Processing Datacenter")
 
 	if specificDC == dc.Name || specificDC == "" {
 
@@ -80,7 +80,7 @@ func ProcessStatus(wg *sync.WaitGroup,
 
 			log.WithFields(log.Fields{
 				"host": host.Name,
-			}).Infoln("Processing status for")
+			}).Debugln("Processing Host")
 
 			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
 
