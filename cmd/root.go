@@ -33,14 +33,14 @@ import (
 	g "github.com/jaxxstorm/hookpick/gpg"
 )
 
-var cfgFile string
-
-var datacenter string
-
-var datacenters []config.Datacenter
-
-// Version : This is for the Version command
-var Version string
+var (
+	cfgFile     string
+	datacenter  string
+	datacenters []config.Datacenter
+	debug       bool
+	// Version : This is for the Version command
+	Version string
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -65,6 +65,7 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hookpick.yaml)")
 	RootCmd.PersistentFlags().StringVarP(&datacenter, "datacenter", "d", "", "datacenter to operate on")
+	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging")
 	viper.BindPFlag("datacenter", RootCmd.PersistentFlags().Lookup("datacenter"))
 
 	if os.Getenv("VAULT_ADDR") != "" {
@@ -72,7 +73,26 @@ func init() {
 	}
 }
 
-func getDatacenters() []config.Datacenter {
+type ConfigStringGetter func() string
+type ConfigKeyGetter func(string, g.StringDecrypter) (bool, string)
+
+type ConfigHelper struct {
+	GetDC        ConfigStringGetter
+	GetCAPath    ConfigStringGetter
+	GetURLScheme ConfigStringGetter
+	GetGPGKey    ConfigKeyGetter
+}
+
+func NewConfigHelper(dcgetter, cagetter, schemegetter ConfigStringGetter, gpgkeygetter ConfigKeyGetter) *ConfigHelper {
+	return &ConfigHelper{
+		GetDC:        dcgetter,
+		GetCAPath:    cagetter,
+		GetURLScheme: schemegetter,
+		GetGPGKey:    gpgkeygetter,
+	}
+}
+
+func GetDatacenters() []config.Datacenter {
 
 	err := viper.UnmarshalKey("datacenters", &datacenters)
 
@@ -84,20 +104,20 @@ func getDatacenters() []config.Datacenter {
 
 }
 
-func getCaPath() string {
+func GetCaPath() string {
 
 	return viper.GetString("capath")
 
 }
 
-func getGpgKey(key string) (bool, string) {
+func GetGpgKey(key string, keyDecrypt g.StringDecrypter) (bool, string) {
 
 	gpg := viper.GetBool("gpg")
 	var vaultKey string
 	var err error
 
 	if gpg == true {
-		vaultKey, err = g.Decrypt(key)
+		vaultKey, err = keyDecrypt(key)
 		if err != nil {
 			log.Fatal("GPG Decryption Error: ", err)
 		}
@@ -110,13 +130,13 @@ func getGpgKey(key string) (bool, string) {
 
 }
 
-func getSpecificDatacenter() string {
+func GetSpecificDatacenter() string {
 
 	return viper.GetString("datacenter")
 
 }
 
-func getProtocol() string {
+func GetProtocol() string {
 
 	viper.SetDefault("protocol", "https")
 
@@ -138,5 +158,8 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Error reading config file: ", err)
+	}
+	if debug {
+		log.SetLevel(log.DebugLevel)
 	}
 }

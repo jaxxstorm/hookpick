@@ -28,6 +28,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"sync"
+
+	"github.com/jaxxstorm/hookpick/config"
+	"github.com/jaxxstorm/hookpick/gpg"
 )
 
 // unsealCmd represents the unseal command
@@ -38,76 +41,144 @@ var unsealCmd = &cobra.Command{
 using the key provided`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		datacenters := getDatacenters()
-		caPath := getCaPath()
-		protocol := getProtocol()
+		allDCs := GetDatacenters()
+		configHelper := NewConfigHelper(GetSpecificDatacenter, GetCaPath, GetProtocol, GetGpgKey)
+		gpgHelper := gpg.NewGPGHelper(gpg.Decrypt)
 
-		var wg sync.WaitGroup
+		wg := sync.WaitGroup{}
 
-		for _, d := range datacenters {
+		for _, dc := range allDCs {
+			wg.Add(1)
+			log.WithFields(log.Fields{
+				"datacenter": dc.Name,
+			}).Debugln("Starting to process Vault unseal")
 
-			datacenter := getSpecificDatacenter()
-
-			if datacenter == d.Name || datacenter == "" {
-
-				var gpg bool
-				var vaultKeys []string
-				var gpgKey string
-
-				for _, k := range d.Keys {
-					gpg, gpgKey = getGpgKey(k.Key)
-					if gpg {
-						vaultKeys = append(vaultKeys, gpgKey)
-					} else {
-						vaultKeys = append(vaultKeys, k.Key)
-					}
-				}
-
-				for _, h := range d.Hosts {
-					hostName := h.Name
-					hostPort := h.Port
-
-					wg.Add(1)
-					go func(hostName string, hostPort int) {
-						defer wg.Done()
-						client, err := v.VaultClient(hostName, hostPort, caPath, protocol)
-						if err != nil {
-							log.WithFields(log.Fields{"host": hostName, "port": hostPort}).Error(err)
-						}
-
-						// get the current status
-						_, init := v.Status(client)
-						if init {
-							if len(vaultKeys) > 0 {
-								var vaultStatus *api.SealStatusResponse
-								for _, vaultKey := range vaultKeys {
-									result, err := client.Sys().Unseal(vaultKey)
-									// error while unsealing
-									if err != nil {
-										log.WithFields(log.Fields{"host": hostName}).Error("Error running unseal operation")
-									}
-									vaultStatus = result
-								}
-								// if it's still sealed, print the progress
-								if vaultStatus.Sealed == true {
-									log.WithFields(log.Fields{"host": hostName, "progress": vaultStatus.Progress, "threshold": vaultStatus.T}).Info("Unseal operation performed")
-									// otherwise, tell us it's unsealed!
-								} else {
-									log.WithFields(log.Fields{"host": hostName, "progress": vaultStatus.Progress, "threshold": vaultStatus.T}).Info("Vault is unsealed!")
-								}
-							} else {
-								log.WithFields(log.Fields{"host": hostName}).Error("No Key Provided")
-							}
-						} else {
-							// sad times, not ready to be unsealed
-							log.WithFields(log.Fields{"host": hostName}).Error("Vault is not ready to be unsealed")
-						}
-					}(hostName, hostPort)
-				}
-				wg.Wait()
-			}
+			go ProcessUnseal(&wg, dc, configHelper, v.NewVaultHelper, gpgHelper, GetVaultKeys, UnsealHost)
 		}
+		wg.Wait()
 	},
+}
+
+type VaultKeyGetter func(config.Datacenter, ConfigKeyGetter, gpg.StringDecrypter) []string
+type HostSubmitImpl func(*sync.WaitGroup, *v.VaultHelper, []string) bool
+
+func ProcessUnseal(wg *sync.WaitGroup,
+	dc config.Datacenter,
+	configHelper *ConfigHelper,
+	vhGetter v.VaultHelperGetter,
+	gpgHelper *gpg.GPGHelper,
+	vaultKeysGetter VaultKeyGetter,
+	unsealHost HostSubmitImpl) {
+
+	defer wg.Done()
+
+	specificDC := configHelper.GetDC()
+	caPath := configHelper.GetCAPath()
+	protocol := configHelper.GetURLScheme()
+
+	dcLogger := log.WithFields(log.Fields{"datacenter": dc.Name})
+
+	if specificDC != "" {
+		dcLogger = dcLogger.WithFields(
+			log.Fields{
+				"specified_dc": specificDC,
+			})
+	}
+	dcLogger.Debugln("Processing datacenter")
+
+	if specificDC == dc.Name || specificDC == "" {
+
+		vaultKeys := vaultKeysGetter(dc, configHelper.GetGPGKey, gpgHelper.Decrypt)
+
+		hwg := sync.WaitGroup{}
+		for _, host := range dc.Hosts {
+			hwg.Add(1)
+			log.WithFields(log.Fields{
+				"host": host.Name,
+			}).Debugln("Processing host")
+
+			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
+			go unsealHost(&hwg, vaultHelper, vaultKeys)
+		}
+		hwg.Wait()
+	}
+}
+
+func GetVaultKeys(dc config.Datacenter, gpgKeyGetter ConfigKeyGetter, keyDecrypter gpg.StringDecrypter) []string {
+	var vaultKeys []string
+	for _, key := range dc.Keys {
+		gpg, gpgKey := gpgKeyGetter(key.Key, keyDecrypter)
+		if gpg {
+			vaultKeys = append(vaultKeys, gpgKey)
+		} else {
+			vaultKeys = append(vaultKeys, key.Key)
+		}
+	}
+
+	return vaultKeys
+}
+
+func UnsealHost(wg *sync.WaitGroup, vaultHelper *v.VaultHelper, vaultKeys []string) bool {
+	defer wg.Done()
+
+	log.WithFields(log.Fields{
+		"host": vaultHelper.HostName,
+	}).Debugln("Starting unseal")
+
+	client, err := vaultHelper.GetVaultClient()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"host":  vaultHelper.HostName,
+			"port":  vaultHelper.Port,
+			"error": err,
+		}).Errorln("Error creating Vault API Client")
+	}
+
+	// get the current status
+	_, init := vaultHelper.GetStatus(client)
+	if !init {
+		// sad times, not ready to be unsealed
+		log.WithFields(log.Fields{
+			"host": vaultHelper.HostName,
+		}).Errorln("Vault is not ready to be unsealed")
+		return init
+	}
+
+	if len(vaultKeys) > 0 {
+		var vaultStatus *api.SealStatusResponse
+		for _, vaultKey := range vaultKeys {
+			result, err := client.Sys().Unseal(vaultKey)
+			// error while unsealing
+			if err != nil {
+				log.WithFields(log.Fields{
+					"host": vaultHelper.HostName,
+				}).Errorln("Error running unseal operation")
+			}
+			vaultStatus = result
+		}
+
+		// if it's still sealed, print the progress
+		if vaultStatus.Sealed == true {
+			log.WithFields(log.Fields{
+				"host":      vaultHelper.HostName,
+				"progress":  vaultStatus.Progress,
+				"threshold": vaultStatus.T,
+			}).Infoln("Unseal operation performed")
+			// otherwise, tell us it's unsealed!
+		} else {
+			log.WithFields(log.Fields{
+				"host":      vaultHelper.HostName,
+				"progress":  vaultStatus.Progress,
+				"threshold": vaultStatus.T,
+			}).Infoln("Vault is unsealed!")
+		}
+	} else {
+		log.WithFields(log.Fields{
+			"host": vaultHelper.HostName,
+		}).Errorln("No Key Provided")
+	}
+
+	return true
 }
 
 func init() {

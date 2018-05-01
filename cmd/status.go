@@ -26,6 +26,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/jaxxstorm/hookpick/config"
 	"sync"
 )
 
@@ -37,55 +38,100 @@ var statusCmd = &cobra.Command{
 specified in the configuration file`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		datacenters := getDatacenters()
-		caPath := getCaPath()
-		protocol := getProtocol()
+		datacenters := GetDatacenters()
+		configHelper := NewConfigHelper(GetSpecificDatacenter, GetCaPath, GetProtocol, GetGpgKey)
+		wg := sync.WaitGroup{}
 
-		var wg sync.WaitGroup
-
-		for _, d := range datacenters {
-
-			datacenter := getSpecificDatacenter()
-
-			if datacenter == d.Name || datacenter == "" {
-
-				for _, h := range d.Hosts {
-
-					// set hostnames for waitgroup
-					hostName := h.Name
-					hostPort := h.Port
-
-					wg.Add(1)
-
-					go func(hostName string, hostPort int) {
-						defer wg.Done()
-
-						client, err := v.VaultClient(hostName, hostPort, caPath, protocol)
-
-						if err != nil {
-							log.WithFields(log.Fields{"host": hostName}).Error("Error creating vault client: ", err)
-						}
-
-						// get the seal status
-						result, err := client.Sys().SealStatus()
-
-						if err != nil {
-							log.WithFields(log.Fields{"host": hostName}).Error("Error getting seal status: ", err)
-						} else {
-							// only check the seal status if we have a client
-							if result.Sealed == true {
-								log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Error("Vault is sealed!")
-							} else {
-								log.WithFields(log.Fields{"host": hostName, "progress": result.Progress, "threshold": result.T}).Info("Vault is unsealed!")
-							}
-						}
-					}(hostName, hostPort)
-				}
-			}
+		for _, dc := range datacenters {
+			wg.Add(1)
+			log.WithFields(log.Fields{
+				"datacenter": dc.Name,
+			}).Debugln("Starting to process")
+			go ProcessStatus(&wg, dc, configHelper, v.NewVaultHelper, GetHostStatus)
 		}
 		wg.Wait()
-
 	},
+}
+
+type HostImpl func(*sync.WaitGroup, *v.VaultHelper)
+
+func ProcessStatus(wg *sync.WaitGroup,
+	dc config.Datacenter,
+	configHelper *ConfigHelper,
+	vhGetter v.VaultHelperGetter,
+	hostStatusGetter HostImpl) {
+
+	defer wg.Done()
+
+	specificDC := configHelper.GetDC()
+	caPath := configHelper.GetCAPath()
+	protocol := configHelper.GetURLScheme()
+
+	log.WithFields(log.Fields{
+		"datacenter": dc.Name,
+		"dc":         specificDC,
+	}).Debugln("Processing status for")
+
+	if specificDC == dc.Name || specificDC == "" {
+
+		hwg := sync.WaitGroup{}
+		for _, host := range dc.Hosts {
+			hwg.Add(1)
+
+			log.WithFields(log.Fields{
+				"host": host.Name,
+			}).Infoln("Processing status for")
+
+			vaultHelper := vhGetter(host.Name, caPath, protocol, host.Port, v.Status)
+
+			go hostStatusGetter(&hwg, vaultHelper)
+		}
+		hwg.Wait()
+	}
+}
+
+func GetHostStatus(wg *sync.WaitGroup, vaultHelper *v.VaultHelper) {
+	// set hostnames for waitgroup
+
+	defer wg.Done()
+
+	log.WithFields(log.Fields{
+		"host": vaultHelper.HostName,
+	}).Debugln("Starting status fetch")
+
+	client, err := vaultHelper.GetVaultClient()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"host":  vaultHelper.HostName,
+			"error": err,
+		}).Errorln("Error creating vault client")
+	}
+
+	// get the seal status
+	result, err := client.Sys().SealStatus()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"host":  vaultHelper.HostName,
+			"error": err,
+		}).Errorln("Error getting seal status")
+	} else {
+		// only check the seal status if we have a client
+		if result.Sealed == true {
+			log.WithFields(log.Fields{
+				"host":      vaultHelper.HostName,
+				"progress":  result.Progress,
+				"threshold": result.T,
+			}).Errorln("Vault is sealed!")
+		} else {
+			log.WithFields(log.Fields{
+				"host":      vaultHelper.HostName,
+				"progress":  result.Progress,
+				"threshold": result.T,
+			}).Infoln("Vault is unsealed!")
+		}
+	}
 }
 
 func init() {

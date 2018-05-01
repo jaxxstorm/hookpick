@@ -10,7 +10,7 @@ type Datacenter struct {
 // Host struct
 type Host struct {
 	Name string
-	Port int
+	Port string
 }
 
 // Key struct
