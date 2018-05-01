@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"os/exec"
 )
 
@@ -28,7 +28,7 @@ func gpg_major_version() (int, error) {
 	var err error
 
 	if cmdOut, err = exec.Command(cmdName, cmdArgs...).Output(); err != nil {
-		fmt.Println("There was an error running gpg --version: ", err)
+		log.Fatal("There was an error running gpg --version: ", err)
 		return -1, err
 	}
 	gpgvers := string(cmdOut)
@@ -70,18 +70,18 @@ func Decrypt(key string) (string, error) {
 
 	gpgvers, err = gpg_major_version()
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("Due to error determining gpg version, defaulting to gpg vers 1 options")
+		log.Warn(err)
+		log.Warn("Due to error determining gpg version, defaulting to gpg vers 1 options")
 		gpgvers = 1
 	}
 
 	cmd.Path = gpgCmd
 	if gpgvers == 1 {
-		fmt.Println("Using GPG decrypt for GPG version 1")
+		log.Debug("Using GPG decrypt for GPG version 1")
 		cmd.Args = []string{"--decrypt", "--quiet"}
 	}
 	if gpgvers == 2 {
-		fmt.Println("Using GPG decrypt for GPG version 2")
+		log.Debug("Using GPG decrypt for GPG version 2")
 		cmd.Args = []string{"--decrypt", "--quiet", "--pinentry-mode", "loopback"}
 	}
 	dec, err := base64.StdEncoding.DecodeString(key)
