@@ -14,6 +14,12 @@ type GPGHelper struct {
 	Decrypt StringDecrypter
 }
 
+func NewGPGHelper(decrypter StringDecrypter) *GPGHelper {
+	return &GPGHelper{
+		Decrypt: decrypter,
+	}
+}
+
 func gpg_major_version() (int, error) {
 	cmdName := "gpg"
 	cmdArgs := []string{"--version"}
@@ -47,13 +53,6 @@ func gpg_major_version() (int, error) {
 		}
 	}
 	return -1, errors.New("Could not determine gpg major version")
-}
-
-func NewGPGHelper(decrypter StringDecrypter) *GPGHelper {
-	return &GPGHelper{
-		Decrypt: decrypter,
-	}
-
 }
 
 // Decrypt GPG keys
