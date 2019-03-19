@@ -93,3 +93,41 @@ If you want to contribute, we use [glide](https://glide.sh/) for dependency mana
  - install glide if needed: `curl https://glide.sh/get | sh`
  - run `glide install` from the directory
  - run `go build -o hookpick main.go`
+
+## Cross-Platform
+
+The project can be compiled for specific platforms via `GOOS` and `GOARCH`:
+
+```sh
+# Mac
+env GOOS=darwin GOARCH=amd64 go build -o hookpick-darwin-amd64 main.go
+
+# Linux
+env GOOS=linux GOARCH=amd64 go build -o hookpick-linux-amd64 main.go
+```
+
+The [Makefile](./Makefile) contains aliases for this:
+
+```sh
+make build-osx
+make build-linux
+```
+
+# Docker
+
+A small Docker image can be built using the `docker build` or `make` commands:
+
+```sh
+# Build Docker image:
+docker build -t jaxxstorm/hookpick .
+
+# Build Docker image via Makefile alias:
+make image
+```
+
+This image can be used as a single-run binary (expects to find `/root/.hookpick.yaml`):
+
+```sh
+~ docker run --rm -v $(PWD):/root/ jaxxstorm/hookpick version
+~ hookpick v0.0.2
+```
