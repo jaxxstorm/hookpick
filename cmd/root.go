@@ -28,9 +28,9 @@ import (
 
 	"github.com/spf13/viper"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/jaxxstorm/hookpick/config"
 	g "github.com/jaxxstorm/hookpick/gpg"
+	log "github.com/sirupsen/logrus"
 )
 
 var (

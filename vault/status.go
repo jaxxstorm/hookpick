@@ -1,8 +1,8 @@
 package vault
 
 import (
-	log "github.com/Sirupsen/logrus"
 	vaultapi "github.com/hashicorp/vault/api"
+	log "github.com/sirupsen/logrus"
 )
 
 type VaultStatusGetter func(client *vaultapi.Client) (bool, bool)

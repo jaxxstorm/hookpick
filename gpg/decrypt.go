@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	log "github.com/Sirupsen/logrus"
 	"os/exec"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type StringDecrypter func(string) (string, error)

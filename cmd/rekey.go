@@ -21,7 +21,7 @@
 package cmd
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	v "github.com/jaxxstorm/hookpick/vault"
