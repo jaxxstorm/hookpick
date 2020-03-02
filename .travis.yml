@@ -1,6 +1,6 @@
 language: go
 go:
-- 1.9.x
+- 1.13.x
 notifications:
   email: false
 before_script:
@@ -12,10 +12,7 @@ before_install:
 - sudo apt-get install -y rpm
 - gem install --no-ri --no-rdoc fpm
 install:
-- go get -v github.com/Masterminds/glide
-- cd $GOPATH/src/github.com/Masterminds/glide && git checkout tags/v0.13.1 && go install
-  && cd -
-- glide install
+- go mod verify
 script: 
 after_success:
 - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
