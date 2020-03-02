@@ -1,9 +1,10 @@
 package vault
 
 import (
-	vaultapi "github.com/hashicorp/vault/api"
 	"net/url"
 	"strings"
+
+	vaultapi "github.com/hashicorp/vault/api"
 )
 
 type VaultHelper struct {
@@ -26,16 +27,16 @@ func NewVaultHelper(host, certpath, protocol, port string, sg VaultStatusGetter)
 	}
 }
 
-// VaultClient Create a Vault Client
+// GetVaultClient Create a Vault Client
 func (helper *VaultHelper) GetVaultClient() (*vaultapi.Client, error) {
 	urlhoststrings := []string{helper.HostName, helper.Port}
-	hostUrl := url.URL{
+	hostURL := url.URL{
 		Host:   strings.Join(urlhoststrings, ":"),
 		Scheme: helper.Protocol,
 	}
 
 	// create a vault config
-	config := &vaultapi.Config{Address: hostUrl.String()}
+	config := &vaultapi.Config{Address: hostURL.String()}
 
 	// read in any environment variables that might be set
 	if err := config.ReadEnvironment(); err != nil {

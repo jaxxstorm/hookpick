@@ -21,6 +21,7 @@ func Status(client *vaultapi.Client) (bool, bool) {
 
 	if err != nil {
 		log.WithFields(log.Fields{"host": client.Address()}).Error(err)
+		return true, initStatus
 	}
 
 	return sealedStatus.Sealed, initStatus
