@@ -87,9 +87,25 @@ You can use _some_ of these environment variables if you wish when using hookpic
 
 # Building
 
-If you want to contribute, we use [glide](https://glide.sh/) for dependency management, so it should be as simple as:
+If you want to contribute, we use [Go Modules](https://github.com/golang/go/wiki/Modules) for dependency management, so it should be as simple as:
 
  - cloning this repo into `$GOPATH/src/github.com/jaxxstorm/hookpick`
- - install glide if needed: `curl https://glide.sh/get | sh`
- - run `glide install` from the directory
+ - run `go get -u` from the directory
+ - run `go mod tidy` from the directory
  - run `go build -o hookpick main.go`
+
+## Building Docker Image
+
+If you want to build the Docker image:
+
+ - cloning this repo into `$GOPATH/src/github.com/jaxxstorm/hookpick`
+ - run `docker build -t hookpick .` from the directory
+
+You should have a tiny image `hookpick` which is less than 5 Mb.
+
+For using it :
+
+ - Create you configfile `.hookpick.yaml`
+ - Run docker command `docker run -v $(pwd)/.hookpick.yaml:/.hookpick.yaml:ro hookpick status`
+ - 
+__Nota__: you can change `status` by one of the program command. (`unseal` if omited)
