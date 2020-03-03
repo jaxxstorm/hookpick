@@ -28,9 +28,9 @@ import (
 
 	"github.com/spf13/viper"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/jaxxstorm/hookpick/config"
 	g "github.com/jaxxstorm/hookpick/gpg"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -97,7 +97,7 @@ func GetDatacenters() []config.Datacenter {
 	err := viper.UnmarshalKey("datacenters", &datacenters)
 
 	if err != nil {
-		log.Error("Unable to read hosts key in config file: %s", err)
+		log.Errorf("Unable to read hosts key in config file: %s", err)
 	}
 
 	return datacenters

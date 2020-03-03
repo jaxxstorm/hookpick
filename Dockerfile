@@ -1,17 +1,13 @@
-FROM golang:1.9
-
+FROM golang:alpine as builder
 WORKDIR /go/src/github.com/jaxxstorm/hookpick
-
 COPY . .
+RUN apk add --no-cache upx ca-certificates
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-d -s -w" -o hookpick-linux-amd64 \
+    && upx hookpick-linux-amd64
 
-RUN go get -v github.com/Masterminds/glide
-
-RUN cd $GOPATH/src/github.com/Masterminds/glide && git checkout tags/v0.12.3 && go install && cd -
-
-RUN ls .
-
-RUN glide install
-
-RUN go build -o hookpick main.go
-
-ENTRYPOINT ["./hookpick"] 
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+USER 1001
+COPY --chown=1001 --from=builder /go/src/github.com/jaxxstorm/hookpick/hookpick-linux-amd64 .
+ENTRYPOINT ["./hookpick-linux-amd64"]
+CMD ["unseal"]

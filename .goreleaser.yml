@@ -8,11 +8,12 @@ builds:
     goarch:
       - amd64
 # Archive customization
-archive:
-  format: tar.gz
+archives:
+  - format: tar.gz
 #sign:
 # artifacts: all
-brew:
+brews:
+ -
   github:
     owner: jaxxstorm
     name: homebrew-tap

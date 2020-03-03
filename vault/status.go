@@ -1,8 +1,8 @@
 package vault
 
 import (
-	log "github.com/Sirupsen/logrus"
 	vaultapi "github.com/hashicorp/vault/api"
+	log "github.com/sirupsen/logrus"
 )
 
 type VaultStatusGetter func(client *vaultapi.Client) (bool, bool)
@@ -21,6 +21,7 @@ func Status(client *vaultapi.Client) (bool, bool) {
 
 	if err != nil {
 		log.WithFields(log.Fields{"host": client.Address()}).Error(err)
+		return true, initStatus
 	}
 
 	return sealedStatus.Sealed, initStatus

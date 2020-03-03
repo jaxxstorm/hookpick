@@ -24,10 +24,11 @@ import (
 	v "github.com/jaxxstorm/hookpick/vault"
 	"github.com/spf13/cobra"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+
+	"sync"
 
 	"github.com/jaxxstorm/hookpick/config"
-	"sync"
 )
 
 // statusCmd represents the status command
